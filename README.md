@@ -2,6 +2,8 @@
 
 Fast, safe mutable dynamic arrays for OCaml.
 
+You can find API documentation [here](https://oldpug.github.io/vec).
+
 ## Summary
 
 The idea behind this library is to provide efficient, mutable dynamic arrays with Rust-like mutability permissions.
