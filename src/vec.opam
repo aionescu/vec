@@ -1,0 +1,20 @@
+opam-version: "2.0"
+name: "vec"
+version: "0.1.0"
+author: "Alex Ionescu"
+maintainer: "alxi.2001@gmail.com"
+synopsis: "Fast, safe dynamic arrays for OCaml"
+build: [
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "build" "@doc" "-p" name ] {with-doc}
+]
+depends: [
+  "ocaml" { >= "4.03.0" }
+  "dune" { >= "1.1" }
+  "odoc" { with-doc }
+]
+tags: [ "vector" "collections" ]
+homepage: "https://github.com/Oldpug/vec/"
+doc: "https://oldpug.github.io/vec"
+dev-repo: "git+https://github.com/Oldpug/vec"
+bug-reports: "https://github.com/Oldpug/vec/issues/"

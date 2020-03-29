@@ -1,0 +1,5 @@
+(library
+  (name vec)
+  (public_name vec)
+  (modules vec)
+  (wrapped false))
