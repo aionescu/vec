@@ -13,7 +13,7 @@ let array_uninit n = Array.make n (Obj.magic 0)
 
 let array_copy n a b =
   for i = 0 to n - 1 do
-    b.(i) <- a.(i)
+    a.(i) <- b.(i)
   done
 
 let make ?growth_rate:(gr=default_growth_rate) ?capacity:(c=default_capacity) () =
@@ -292,15 +292,17 @@ let sort_by f v =
 
 let sort v = sort_by compare v
 
-let rec iota start end' =
+let iota start end' =
+  let v = make ~capacity:(abs (end' - start)) () in
   if start > end' then
-    iota end' start
+    for i = start downto end' do
+      push i v
+    done
   else
-    let v = make ~capacity:(end' - start) () in
     for i = start to end' do
       push i v
     done;
-    v
+  v
 
 module Infix = struct
   let (.![]) = unsafe_get
