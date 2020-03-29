@@ -41,20 +41,32 @@ let set_growth_rate gr v =
   else
     v.growth_rate <- gr 
 
-let unsafe_get v = Array.get v.data
-let unsafe_set v = Array.set v.data
+let unchecked_get v = Array.get v.data
+let unchecked_set v = Array.set v.data
+
+let unsafe_get v idx =
+  if idx < 0 || idx >= v.length then
+    raise (Invalid_argument "Index out of range.")
+  else
+    unchecked_get v idx
+
+let unsafe_set v idx val' =
+  if idx < 0 || idx >= v.length then
+    raise (Invalid_argument "Index out of range.")
+  else
+    unchecked_set v idx val'
 
 let get v idx =
   if idx < 0 || idx >= v.length then
     None
   else
-    Some (unsafe_get v idx)
+    Some (unchecked_get v idx)
 
 let set v idx val' =
   if idx < 0 || idx >= v.length then
     false
   else
-    (unsafe_set v idx val'; true) 
+    (unchecked_set v idx val'; true) 
 
 let ensure_capacity c v =
   if c < 0 then
@@ -94,14 +106,14 @@ let push val' v =
   ensure_capacity (v.length + 1) v;
   let length = v.length in
   v.length <- length + 1;
-  unsafe_set v length val'
+  unchecked_set v length val'
 
 let pop v =
   if v.length = 0 then
     None
   else
-    let val' = unsafe_get v (v.length - 1) in
-    unsafe_set v (v.length - 1) (Obj.magic 0);
+    let val' = unchecked_get v (v.length - 1) in
+    unchecked_set v (v.length - 1) (Obj.magic 0);
     v.length <- v.length - 1;
     Some val'
 
@@ -114,7 +126,7 @@ let map f v =
   let v2 = make ~growth_rate:v.growth_rate ~capacity:v.length () in
 
   for i = 0 to v.length - 1 do
-    unsafe_set v2 i (f (unsafe_get v i))
+    unchecked_set v2 i (f (unchecked_get v i))
   done;
 
   v2
@@ -123,14 +135,14 @@ let mapi f v =
   let v2 = make ~growth_rate:v.growth_rate ~capacity:v.length () in
 
   for i = 0 to v.length - 1 do
-    unsafe_set v2 i (f i (unsafe_get v i))
+    unchecked_set v2 i (f i (unchecked_get v i))
   done;
 
   v2
 
 let map_in_place f v =
   for i = 0 to v.length - 1 do
-    unsafe_set v i (f (unsafe_get v i))
+    unchecked_set v i (f (unchecked_get v i))
   done
 
 let map2 f v1 v2 =
@@ -144,7 +156,7 @@ let map2 f v1 v2 =
 
   for i = 0 to v1.length - 1 do
     for j = 0 to v2.length - 1 do
-      unsafe_set v !idx (f (unsafe_get v1 i) (unsafe_get v2 j));
+      unchecked_set v !idx (f (unchecked_get v1 i) (unchecked_get v2 j));
       incr idx
     done
   done;
@@ -158,7 +170,7 @@ let flatten vs =
   let total_l = ref 0 in
 
   for i = 0 to vs.length - 1 do
-    let crr_v = unsafe_get vs i in
+    let crr_v = unchecked_get vs i in
     let v_gr = crr_v.growth_rate in
     if !max_gr < v_gr then
       max_gr := v_gr;
@@ -172,10 +184,10 @@ let flatten vs =
   let idx = ref 0 in 
 
   for i = 0 to vs.length - 1 do
-    let crr_v = unsafe_get vs i in
+    let crr_v = unchecked_get vs i in
     
     for j = 0 to crr_v.length - 1 do
-      unsafe_set v !idx (unsafe_get crr_v j);
+      unchecked_set v !idx (unchecked_get crr_v j);
       incr idx
     done
   done;
@@ -186,19 +198,19 @@ let flat_map f v = flatten (map f v)
 
 let iter f v =
   for i = 0 to v.length - 1 do
-    f (unsafe_get v i)
+    f (unchecked_get v i)
   done
 
 let iteri f v =
   for i = 0 to v.length - 1 do
-    f i (unsafe_get v i)
+    f i (unchecked_get v i)
   done
 
 let filter f v =
   let v2 = make ~growth_rate:v.growth_rate ~capacity:v.length () in
 
   for i = 0 to v.length - 1 do
-    let e = unsafe_get v i in
+    let e = unchecked_get v i in
     if f e then
       push e v2
   done;
@@ -217,7 +229,7 @@ let of_list l =
 let to_list v =
   let l = ref [] in
   for i = v.length - 1 downto 0 do
-    l := (unsafe_get v i) :: !l
+    l := (unchecked_get v i) :: !l
   done;
 
   !l
@@ -249,7 +261,7 @@ let append v v2 =
   reserve v2.length v;
 
   for i = 0 to v2.length - 1 do
-    push (unsafe_get v2 i) v
+    push (unchecked_get v2 i) v
   done
 
 let any f v =
@@ -257,7 +269,7 @@ let any f v =
   let i = ref 0 in
 
   while not !done' && !i < v.length do
-    if f (unsafe_get v !i) then
+    if f (unchecked_get v !i) then
       done' := true
   done;
 
@@ -268,7 +280,7 @@ let all f v =
   let i = ref 0 in
 
   while !done' && !i < v.length do
-    if not (f (unsafe_get v !i)) then
+    if not (f (unchecked_get v !i)) then
       done' := false
   done;
 
@@ -281,7 +293,7 @@ let fold_left f z v =
   let z = ref z in
 
   for i = 0 to v.length - 1 do
-    z := f !z (unsafe_get v i)
+    z := f !z (unchecked_get v i)
   done;
 
   !z
