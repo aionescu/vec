@@ -109,6 +109,12 @@ val of_array_steal : 'a array -> ('a, [`R | `W]) t
 val steal : ('a, [> `R | `W]) t -> 'a array
 (** Returns the vector's internal buffer, and resets the vector to an empty state. *)
 
+val rev : ('a, [> `R]) t -> ('a, [`R | `W]) t
+(** Returns a new vector that contains all the items in the specified vector, but in reverse order. *)
+
+val rev_in_place : ('a, [`R | `W]) t -> unit
+(** Reverses the vector in-place, without allocating a new vector. *)
+
 val append : ('a, [`R | `W]) t -> ('a, [> `R]) t -> unit
 (** Appends the second vector to the first vector. *)
 
@@ -125,7 +131,16 @@ val memq : 'a -> ('a, [> `R]) t -> bool
 (** Returns [true] if the specified item exists in the vector. Uses physical equality. *)
 
 val fold_left : ('b -> 'a -> 'b) -> 'b -> ('a, [> `R]) t -> 'b
-(** Folds the specified function and default value over the array. *)
+(** Folds the specified function and default value over the array, from left to right. *)
+
+val fold_right : ('a -> 'b -> 'b) -> 'b -> ('a, [> `R]) t -> 'b
+(** Folds the specified function and default value over the array, from right to left. *)
+
+val zip : ('a, [> `R]) t -> ('b, [> `R]) t -> ('a * 'b, [`R | `W]) t
+(** Zips the two vectors together. *)
+
+val zip_with : ('a -> 'b -> 'c) -> ('a, [> `R]) t -> ('b, [> `R]) t -> ('c, [`R | `W]) t
+(** Zips the two vectors together, using the specified function to combine values. *)
 
 val sort : ('a, [`R | `W]) t -> unit
 (** Sorts the specified vector. *)

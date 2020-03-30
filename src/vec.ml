@@ -257,6 +257,27 @@ let to_array v =
   array_copy v.length a v.data;
   a
 
+let rev_in_place v =
+  let i = ref 0 in
+  let j = ref (v.length - 1) in
+
+  while !i < !j do
+    let i' = !i in
+    let j' = !j in
+
+    let temp = unchecked_get v i' in
+    unchecked_set v i' (unchecked_get v j');
+    unchecked_set v j' temp;
+
+    incr i;
+    decr j
+  done
+
+let rev v =
+  let v' = copy v in
+  rev_in_place v';
+  v'
+
 let append v v2 =
   reserve v2.length v;
 
@@ -297,6 +318,28 @@ let fold_left f z v =
   done;
 
   !z
+
+let fold_right f z v =
+  let z = ref z in
+
+  for i = v.length - 1 downto 0 do
+    z := f (unchecked_get v i) !z
+  done;
+
+  !z
+
+let zip_with f v1 v2 =
+  let min_length = min v1.length v2.length in
+  let max_gr = max v1.growth_rate v2.growth_rate in
+  let v = make ~growth_rate:max_gr ~capacity:min_length () in
+
+  for i = 0 to min_length do
+    push (f (unchecked_get v1 i) (unchecked_get v2 i)) v
+  done;
+
+  v
+
+let zip v1 v2 = zip_with (fun a b -> (a, b)) v1 v2
 
 let sort_by f v =
   shrink_to_fit v;
