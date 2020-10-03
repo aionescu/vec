@@ -125,6 +125,7 @@ let singleton a =
 
 let map f v =
   let v2 = make ~growth_rate:v.growth_rate ~capacity:v.length () in
+  v2.length <- v.length;
 
   for i = 0 to v.length - 1 do
     unchecked_set v2 i (f (unchecked_get v i))
@@ -134,6 +135,7 @@ let map f v =
 
 let mapi f v =
   let v2 = make ~growth_rate:v.growth_rate ~capacity:v.length () in
+  v2.length <- v.length;
 
   for i = 0 to v.length - 1 do
     unchecked_set v2 i (f i (unchecked_get v i))
