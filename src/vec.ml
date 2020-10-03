@@ -28,8 +28,9 @@ let make ?growth_rate:(gr=default_growth_rate) ?capacity:(c=default_capacity) ()
     ; data = array_uninit c
     }
 
-let as_read_only v = Obj.magic v
-let as_write_only v = Obj.magic v
+external as_read_only : ('a, [> `R]) t -> ('a, [`R]) t = "%identity"
+
+external as_write_only : ('a, [> `W]) t -> ('a, [`W]) t = "%identity"
 
 let length v = v.length
 let capacity v = v.capacity
@@ -44,13 +45,13 @@ let set_growth_rate gr v =
 let unchecked_get v = Array.get v.data
 let unchecked_set v = Array.set v.data
 
-let unsafe_get v idx =
+let get_exn v idx =
   if idx < 0 || idx >= v.length then
     raise (Invalid_argument "Index out of range.")
   else
     unchecked_get v idx
 
-let unsafe_set v idx val' =
+let set_exn v idx val' =
   if idx < 0 || idx >= v.length then
     raise (Invalid_argument "Index out of range.")
   else
@@ -195,6 +196,8 @@ let flatten vs =
   v
 
 let flat_map f v = flatten (map f v)
+
+let cartesian_product a b = map2 (fun a b -> a, b) a b
 
 let iter f v =
   for i = 0 to v.length - 1 do
@@ -347,6 +350,22 @@ let sort_by f v =
 
 let sort v = sort_by compare v
 
+let pretty_print fmt v =
+  if v.length = 0 then
+    "[]"
+  else
+    let buf = Buffer.create 2 in
+
+    Buffer.add_char buf '[';
+    Buffer.add_string buf @@ fmt (unchecked_get v 0);
+
+    for i = 1 to v.length do
+      Buffer.add_string buf ", ";
+      Buffer.add_string buf (fmt (unchecked_get v i))
+    done;
+
+    Buffer.contents buf
+
 let iota start end' =
   let v = make ~capacity:(abs (end' - start)) () in
   if start > end' then
@@ -360,8 +379,8 @@ let iota start end' =
   v
 
 module Infix = struct
-  let (.![]) = unsafe_get
-  let (.![]<-) = unsafe_set
+  let (.![]) = get_exn
+  let (.![]<-) = set_exn
 
   let (.?[]) = get
   let (.?[]<-) = set
@@ -376,4 +395,12 @@ module Infix = struct
   let (>>=) v f = f =<< v
 
   let (--) = iota
+end
+
+module Let_syntax = struct
+  let (let+) v f = map f v
+  let (and+) = cartesian_product
+
+  let (let*) v f = flat_map f v
+  let (and*) = cartesian_product
 end

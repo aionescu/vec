@@ -14,7 +14,7 @@ val copy : ('a, [> `R]) t -> ('a, [`R | `W]) t
 val as_read_only : ('a, [> `R]) t -> ('a, [`R]) t
 (** Reinterprets the specified vector as a read-only vector. *)
 
-val as_write_only : ('a, [> `R]) t -> ('a, [`W]) t
+val as_write_only : ('a, [> `W]) t -> ('a, [`W]) t
 (** Reinterprets the specified vector as a write-only vector. *)
 
 val length : ('a, [> ]) t -> int
@@ -29,11 +29,11 @@ val growth_rate : ('a, [> `R]) t -> float
 val set_growth_rate : float -> ('a, [`R | `W]) t -> unit
 (** Sets the growth rate of the specified vector to the specified value. *)
 
-val unsafe_get : ('a, [> `R]) t -> int -> 'a
+val get_exn : ('a, [> `R]) t -> int -> 'a
 (** Gets the value in the vector at the specified index.
     @raise Invalid_argument if the index is out of bounds. *)
 
-val unsafe_set : ('a, [> `W]) t -> int -> 'a -> unit
+val set_exn : ('a, [> `W]) t -> int -> 'a -> unit
 (** Sets the value in the vector at the specified index to the specified value.
     @raise Invalid_argument if the index is out of bounds. *)
 
@@ -59,7 +59,7 @@ val pop : ('a, [> `R | `W]) t -> 'a option
 (** Pops off the item from the end of the vector. *)
 
 val map : ('a -> 'b) -> ('a, [> `R]) t -> ('b, [`R | `W]) t
-(** Maps the specified function over the vector, returning a new vector. *)
+(** Maps the specified function over the vector, returning a new vector. (Functorial map operation) *)
 
 val mapi : (int -> 'a -> 'b) -> ('a, [> `R]) t -> ('b, [`R | `W]) t
 (** Like {!map}, but the function also takes the item's index as a parameter. *)
@@ -68,22 +68,25 @@ val map_in_place : ('a -> 'a) -> ('a, [`R | `W]) t -> unit
 (** Like {!map}, but the transformation is done in-place, so no new vector gets created. *)
 
 val return : 'a -> ('a, [`R | `W]) t
-(** Returns a singleton vector containing the specified item. *)
+(** Returns a singleton vector containing the specified item. (Applicative functor pure operation) *)
 
 val map2 : ('a -> 'b -> 'c) -> ('a, [> `R]) t -> ('b, [> `R]) t -> ('c, [`R | `W]) t
-(** Maps the specified function over all combinations of tuples from the 2 specified vectors, returning a new vector. *)
+(** Maps the specified function over all combinations of tuples from the 2 specified vectors, returning a new vector. (Applicative functor liftA2 operation *)
 
 val apply : ('a -> 'b, [> `R]) t -> ('a, [> `R]) t -> ('b, [`R | `W]) t
-(** Applies every function from the first vector to every value from the second vector, returning a new vector. *)
+(** Applies every function from the first vector to every value from the second vector, returning a new vector. (Applicatve functor <*> operation) *)
 
-val flatten : (('a, [> `R]) t, [> `R]) t -> ('a, [> `R]) t
-(** Flattens nested vectors into a single, flat vector. *)
+val flatten : (('a, [> `R]) t, [> `R]) t -> ('a, [`R | `W]) t
+(** Flattens nested vectors into a single, one-dimensional vector. (Monadic join operation) *)
 
 val flat_map : ('a -> ('b, [> `R]) t) -> ('a, [> `R]) t -> ('b, [`R | `W]) t
-(** Like {!map}, but flattened *)
+(** Like {!map}, but flattens the result. (Monadic bind operation) *)
+
+val cartesian_product : ('a, [> `R]) t -> ('b, [> `R]) t -> ('a * 'b, [`R | `W]) t
+(** Cartesian product of 2 vectors. (Equivalent to [liftA2 (,)]) *)
 
 val iter : ('a -> unit) -> ('a, [> `R]) t -> unit
-(** Applie the specified function to each item in the vector. *)
+(** Applies the specified function to each item in the vector. *)
 
 val iteri : (int -> 'a -> unit) -> ('a, [> `R]) t -> unit
 (** Like {!iter}, but the function also takes the item's index as a parameter. *)
@@ -148,41 +151,59 @@ val sort : ('a, [`R | `W]) t -> unit
 val sort_by : ('a -> 'a -> int) -> ('a, [`R | `W]) t -> unit
 (** Sorts the specified vector using the specified comparison function. *)
 
+val pretty_print : ('a -> string) -> ('a, [> `R]) t -> string
+(** Returns a string representation of the vector, using the specified function to format each value. *)
+
 val iota : int -> int -> (int, [`R | `W]) t
 (** Constructs a vector containing all numbers in the specified range. *)
 
 module Infix : sig
   val (.![]) : ('a, [> `R]) t -> int -> 'a
-  (** Infix version of {!unsafe_get}. *)
+  (** Infix version of {!get_exn}. *)
 
   val (.![]<-) : ('a, [> `W]) t -> int -> 'a -> unit
-  (** Infix version of {!unsafe_set}. *)
+  (** Infix version of {!set_exn}. *)
 
   val (.?[]) : ('a, [> `R]) t -> int -> 'a option
-  (** Infix version of {!get}.*)
+  (** Infix version of {!get}. *)
 
   val (.?[]<-) : ('a, [> `W]) t -> int -> 'a -> bool
-  (** Infix version of {!set}.*)
+  (** Infix version of {!set}. *)
 
   val (=|<) : ('a -> 'b) -> ('a, [> `R]) t -> ('b, [`R | `W]) t
-  (** Infix version of {!map}.*)
+  (** Infix version of {!map}. *)
 
   val (>|=) : ('a, [> `R]) t -> ('a -> 'b) -> ('b, [`R | `W]) t
   (** Infix version of {!map}, with the arguments flipped. *)
   
   val (<$>) : ('a -> 'b) -> ('a, [> `R]) t -> ('b, [`R | `W]) t
-  (** Infix version of {!map}.*)
+  (** Infix version of {!map}. *)
 
   val (<*>) : ('a -> 'b, [> `R]) t -> ('a, [> `R]) t -> ('b, [`R | `W]) t
-  (** Infix version of {!apply}.*)
+  (** Infix version of {!apply}. *)
 
   val (=<<) : ('a -> ('b, [> `R]) t) -> ('a, [> `R]) t -> ('b, [`R | `W]) t
-  (** Infix version of {!flat_map}.*)
+  (** Infix version of {!flat_map}. *)
 
   val (>>=) : ('a, [> `R]) t -> ('a -> ('b, [> `R]) t) -> ('b, [`R | `W]) t
-  (** Infix version of {!flat_map}, with the arguments flipped.*)
+  (** Infix version of {!flat_map}, with the arguments flipped. *)
 
   val (--) : int -> int -> (int, [`R | `W]) t
-  (** Infix version of {!iota}.*)
+  (** Infix version of {!iota}. *)
 end
 (** Contains infix versions of some vector operations. *)
+
+module Let_syntax : sig
+  val (let+) : ('a, [> `R]) t -> ('a -> 'b) -> ('b, [`R | `W]) t
+  (** Equivalent to {!map}, but with the arguments flipped. *)
+
+  val (and+) : ('a, [> `R]) t -> ('b, [> `R]) t -> ('a * 'b, [`R | `W]) t
+  (** Equivalent to {!cartesian_product}. *)
+
+  val (let*) : ('a, [> `R]) t -> ('a -> ('b, [> `R]) t) -> ('b, [`R | `W]) t
+  (** Equivalent to {!flat_map}, but with the arguments flipped. *)
+
+  val (and*) : ('a, [> `R]) t -> ('b, [> `R]) t -> ('a * 'b, [`R | `W]) t
+  (** Equivalent to {!cartesian_product}. *)
+end
+(** Provides support for OCaml 4.08's binding operator syntax. *)
