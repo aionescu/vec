@@ -16,11 +16,18 @@ All functions defined in the `Vec` module are polymorphic in this type parameter
 For example, functions that only read data from a vector accept a ``('a, [> `R]) Vec.t`` parameter,
 so both ``[`R]`` vectors and ``[`R | `W]`` vectors can be passed.
 
-## Building
+## Installing
 
-To build the project, run `dune build` in the `src` folder.
+The package can be found on opam [here](https://opam.ocaml.org/packages/vec/).
 
-To build the documentation, run `dune build @doc` in the `src` folder.
+To build the project, run the following in the root of the repository:
+
+```sh
+dune build
+dune install
+```
+
+To uninstall, run `dune uninstall` in the root of the repository.
 
 ## License
 
