@@ -336,10 +336,12 @@ let fold_right f z v =
 let zip_with f v1 v2 =
   let min_length = min v1.length v2.length in
   let max_gr = max v1.growth_rate v2.growth_rate in
+  
   let v = make ~growth_rate:max_gr ~capacity:min_length () in
+  v.length <- min_length;
 
-  for i = 0 to min_length do
-    push (f (unchecked_get v1 i) (unchecked_get v2 i)) v
+  for i = 0 to min_length - 1 do
+    unchecked_set v i (f (unchecked_get v1 i) (unchecked_get v2 i))
   done;
 
   v
