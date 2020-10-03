@@ -9,12 +9,12 @@ build: [
   ["dune" "build" "@doc" "-p" name ] {with-doc}
 ]
 depends: [
-  "ocaml" { >= "4.03.0" }
+  "ocaml" { >= "4.08.0" }
   "dune" { >= "1.1" }
   "odoc" { with-doc }
 ]
 tags: [ "vector" "collections" ]
-homepage: "https://github.com/Oldpug/vec/"
-doc: "https://oldpug.github.io/vec"
-dev-repo: "git+https://github.com/Oldpug/vec"
-bug-reports: "https://github.com/Oldpug/vec/issues/"
+homepage: "https://github.com/aionescu/vec/"
+doc: "https://aionescu.github.io/vec/docs/vec/index.html"
+dev-repo: "git+https://github.com/aionescu/vec"
+bug-reports: "https://github.com/aionescu/vec/issues/"
