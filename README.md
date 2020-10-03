@@ -2,7 +2,7 @@
 
 Fast, safe mutable dynamic arrays for OCaml.
 
-You can find API documentation [here](https://oldpug.github.io/vec).
+You can find API documentation [here](https://aionescu.github.io/vec/docs).
 
 ## Summary
 
