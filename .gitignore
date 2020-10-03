@@ -4,3 +4,4 @@ _build/
 *.cmx
 *.o
 *.out
+.vscode/
