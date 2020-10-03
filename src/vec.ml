@@ -364,6 +364,7 @@ let pretty_print fmt v =
       Buffer.add_string buf (fmt (unchecked_get v i))
     done;
 
+    Buffer.add_char buf ']';
     Buffer.contents buf
 
 let iota start end' =
