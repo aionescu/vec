@@ -118,7 +118,7 @@ let pop v =
     v.length <- v.length - 1;
     Some val'
 
-let return a =
+let singleton a =
   let v = make ~capacity:1 () in
   push a v;
   v
@@ -359,7 +359,7 @@ let pretty_print fmt v =
     Buffer.add_char buf '[';
     Buffer.add_string buf @@ fmt (unchecked_get v 0);
 
-    for i = 1 to v.length do
+    for i = 1 to v.length - 1 do
       Buffer.add_string buf ", ";
       Buffer.add_string buf (fmt (unchecked_get v i))
     done;

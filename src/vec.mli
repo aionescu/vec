@@ -67,7 +67,7 @@ val mapi : (int -> 'a -> 'b) -> ('a, [> `R]) t -> ('b, [`R | `W]) t
 val map_in_place : ('a -> 'a) -> ('a, [`R | `W]) t -> unit
 (** Like {!map}, but the transformation is done in-place, so no new vector gets created. *)
 
-val return : 'a -> ('a, [`R | `W]) t
+val singleton : 'a -> ('a, [`R | `W]) t
 (** Returns a singleton vector containing the specified item. (Applicative functor pure operation) *)
 
 val map2 : ('a -> 'b -> 'c) -> ('a, [> `R]) t -> ('b, [> `R]) t -> ('c, [`R | `W]) t
