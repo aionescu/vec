@@ -1,6 +1,6 @@
 type ('a, -'p) t =
   { mutable growth_rate: float
-  ; mutable length: int 
+  ; mutable length: int
   ; mutable capacity: int
   ; mutable data: 'a array
   }
@@ -10,11 +10,6 @@ let default_capacity = 0
 let default_length = 0
 
 let array_uninit n = Array.make n (Obj.magic 0)
-
-let array_copy n a b =
-  for i = 0 to n - 1 do
-    a.(i) <- b.(i)
-  done
 
 let make ?growth_rate:(gr=default_growth_rate) ?capacity:(c=default_capacity) () =
   if gr <= 1. then
@@ -35,12 +30,12 @@ external as_write_only : ('a, [> `W]) t -> ('a, [`W]) t = "%identity"
 let length v = v.length
 let capacity v = v.capacity
 
-let growth_rate v = v.growth_rate 
+let growth_rate v = v.growth_rate
 let set_growth_rate gr v =
   if gr <= 1. then
     raise (Invalid_argument "growth_rate <= 1.")
   else
-    v.growth_rate <- gr 
+    v.growth_rate <- gr
 
 let unchecked_get v = Array.get v.data
 let unchecked_set v = Array.set v.data
@@ -67,7 +62,7 @@ let set v idx val' =
   if idx < 0 || idx >= v.length then
     false
   else
-    (unchecked_set v idx val'; true) 
+    (unchecked_set v idx val'; true)
 
 let ensure_capacity c v =
   if c < 0 then
@@ -84,9 +79,9 @@ let ensure_capacity c v =
     v.capacity <- int_of_float !cap;
 
     let data = array_uninit v.capacity in
-    array_copy v.length data v.data;
+    Array.blit v.data 0 data 0 v.length;
 
-    v.data <- data 
+    v.data <- data
   end
 
 let reserve c v =
@@ -96,10 +91,10 @@ let reserve c v =
     ensure_capacity (v.capacity + c) v
 
 let shrink_to_fit v =
-  if v.capacity > v.length then 
+  if v.capacity > v.length then
     let data = array_uninit v.length in
-    array_copy v.length data v.data;
-  
+    Array.blit v.data 0 data 0 v.length;
+
     v.capacity <- v.length;
     v.data <- data
 
@@ -184,11 +179,11 @@ let flatten vs =
   let v = make ~growth_rate:!max_gr ~capacity:!total_l () in
   v.length <- !total_l;
 
-  let idx = ref 0 in 
+  let idx = ref 0 in
 
   for i = 0 to vs.length - 1 do
     let crr_v = unchecked_get vs i in
-    
+
     for j = 0 to crr_v.length - 1 do
       unchecked_set v !idx (unchecked_get crr_v j);
       incr idx
@@ -246,7 +241,7 @@ let of_array_steal a =
   ; capacity = length
   ; data = a
   }
-  
+
 let steal v =
   let data = v.data in
   v.length <- 0;
@@ -259,7 +254,7 @@ let copy v = of_array v.data
 
 let to_array v =
   let a = array_uninit v.length in
-  array_copy v.length a v.data;
+  Array.blit v.data 0 a 0 v.length;
   a
 
 let rev_in_place v =
@@ -336,7 +331,7 @@ let fold_right f z v =
 let zip_with f v1 v2 =
   let min_length = min v1.length v2.length in
   let max_gr = max v1.growth_rate v2.growth_rate in
-  
+
   let v = make ~growth_rate:max_gr ~capacity:min_length () in
   v.length <- min_length;
 
