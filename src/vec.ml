@@ -23,9 +23,9 @@ let make ?growth_rate:(gr=default_growth_rate) ?capacity:(c=default_capacity) ()
     ; data = array_uninit c
     }
 
-external as_read_only : ('a, [> `R]) t -> ('a, [`R]) t = "%identity"
+external as_read_only: ('a, [> `R]) t -> ('a, [`R]) t = "%identity"
 
-external as_write_only : ('a, [> `W]) t -> ('a, [`W]) t = "%identity"
+external as_write_only: ('a, [> `W]) t -> ('a, [`W]) t = "%identity"
 
 let length v = v.length
 let capacity v = v.capacity
@@ -37,32 +37,21 @@ let set_growth_rate gr v =
   else
     v.growth_rate <- gr
 
-let unchecked_get v = Array.get v.data
-let unchecked_set v = Array.set v.data
+let get_exn v idx = v.data.(idx)
 
-let get_exn v idx =
-  if idx < 0 || idx >= v.length then
-    raise (Invalid_argument "Index out of range.")
-  else
-    unchecked_get v idx
-
-let set_exn v idx val' =
-  if idx < 0 || idx >= v.length then
-    raise (Invalid_argument "Index out of range.")
-  else
-    unchecked_set v idx val'
+let set_exn v idx val' = v.data.(idx) <- val'
 
 let get v idx =
   if idx < 0 || idx >= v.length then
     None
   else
-    Some (unchecked_get v idx)
+    Some v.data.(idx)
 
 let set v idx val' =
   if idx < 0 || idx >= v.length then
     false
   else
-    (unchecked_set v idx val'; true)
+    (v.data.(idx) <- val'; true)
 
 let ensure_capacity c v =
   if c < 0 then
@@ -102,14 +91,14 @@ let push val' v =
   ensure_capacity (v.length + 1) v;
   let length = v.length in
   v.length <- length + 1;
-  unchecked_set v length val'
+  v.data.(length) <- val'
 
 let pop v =
   if v.length = 0 then
     None
   else
-    let val' = unchecked_get v (v.length - 1) in
-    unchecked_set v (v.length - 1) (Obj.magic 0);
+    let val' = v.data.(v.length - 1) in
+    v.data.(v.length - 1) <- Obj.magic 0;
     v.length <- v.length - 1;
     Some val'
 
@@ -123,7 +112,7 @@ let map f v =
   v2.length <- v.length;
 
   for i = 0 to v.length - 1 do
-    unchecked_set v2 i (f (unchecked_get v i))
+    v2.data.(i) <- f v.data.(i)
   done;
 
   v2
@@ -133,14 +122,14 @@ let mapi f v =
   v2.length <- v.length;
 
   for i = 0 to v.length - 1 do
-    unchecked_set v2 i (f i (unchecked_get v i))
+    v2.data.(i) <- f i v.data.(i)
   done;
 
   v2
 
 let map_in_place f v =
   for i = 0 to v.length - 1 do
-    unchecked_set v i (f (unchecked_get v i))
+    v.data.(i) <- f v.data.(i)
   done
 
 let map2 f v1 v2 =
@@ -154,7 +143,7 @@ let map2 f v1 v2 =
 
   for i = 0 to v1.length - 1 do
     for j = 0 to v2.length - 1 do
-      unchecked_set v !idx (f (unchecked_get v1 i) (unchecked_get v2 j));
+      v.data.(!idx) <- f v1.data.(i) v2.data.(j);
       incr idx
     done
   done;
@@ -168,7 +157,7 @@ let flatten vs =
   let total_l = ref 0 in
 
   for i = 0 to vs.length - 1 do
-    let crr_v = unchecked_get vs i in
+    let crr_v = vs.data.(i) in
     let v_gr = crr_v.growth_rate in
     if !max_gr < v_gr then
       max_gr := v_gr;
@@ -182,10 +171,10 @@ let flatten vs =
   let idx = ref 0 in
 
   for i = 0 to vs.length - 1 do
-    let crr_v = unchecked_get vs i in
+    let crr_v = vs.data.(i) in
 
     for j = 0 to crr_v.length - 1 do
-      unchecked_set v !idx (unchecked_get crr_v j);
+      v.data.(!idx) <- crr_v.data.(j);
       incr idx
     done
   done;
@@ -198,19 +187,19 @@ let cartesian_product a b = map2 (fun a b -> a, b) a b
 
 let iter f v =
   for i = 0 to v.length - 1 do
-    f (unchecked_get v i)
+    f v.data.(i)
   done
 
 let iteri f v =
   for i = 0 to v.length - 1 do
-    f i (unchecked_get v i)
+    f i v.data.(i)
   done
 
 let filter f v =
   let v2 = make ~growth_rate:v.growth_rate ~capacity:v.length () in
 
   for i = 0 to v.length - 1 do
-    let e = unchecked_get v i in
+    let e = v.data.(i) in
     if f e then
       push e v2
   done;
@@ -229,7 +218,7 @@ let of_list l =
 let to_list v =
   let l = ref [] in
   for i = v.length - 1 downto 0 do
-    l := (unchecked_get v i) :: !l
+    l := v.data.(i) :: !l
   done;
 
   !l
@@ -265,9 +254,9 @@ let rev_in_place v =
     let i' = !i in
     let j' = !j in
 
-    let temp = unchecked_get v i' in
-    unchecked_set v i' (unchecked_get v j');
-    unchecked_set v j' temp;
+    let temp = v.data.(i') in
+    v.data.(i') <- v.data.(j');
+    v.data.(j') <- temp;
 
     incr i;
     decr j
@@ -282,7 +271,7 @@ let append v v2 =
   reserve v2.length v;
 
   for i = 0 to v2.length - 1 do
-    push (unchecked_get v2 i) v
+    push v2.data.(i) v
   done
 
 let any f v =
@@ -290,7 +279,7 @@ let any f v =
   let i = ref 0 in
 
   while not !done' && !i < v.length do
-    if f (unchecked_get v !i) then
+    if f v.data.(!i) then
       done' := true
   done;
 
@@ -301,7 +290,7 @@ let all f v =
   let i = ref 0 in
 
   while !done' && !i < v.length do
-    if not (f (unchecked_get v !i)) then
+    if not (f v.data.(!i)) then
       done' := false
   done;
 
@@ -314,7 +303,7 @@ let fold_left f z v =
   let z = ref z in
 
   for i = 0 to v.length - 1 do
-    z := f !z (unchecked_get v i)
+    z := f !z v.data.(i)
   done;
 
   !z
@@ -323,7 +312,7 @@ let fold_right f z v =
   let z = ref z in
 
   for i = v.length - 1 downto 0 do
-    z := f (unchecked_get v i) !z
+    z := f v.data.(i) !z
   done;
 
   !z
@@ -336,7 +325,7 @@ let zip_with f v1 v2 =
   v.length <- min_length;
 
   for i = 0 to min_length - 1 do
-    unchecked_set v i (f (unchecked_get v1 i) (unchecked_get v2 i))
+    v.data.(i) <- f v1.data.(i) v2.data.(i)
   done;
 
   v
@@ -356,11 +345,11 @@ let pretty_print fmt v =
     let buf = Buffer.create 2 in
 
     Buffer.add_char buf '[';
-    Buffer.add_string buf @@ fmt (unchecked_get v 0);
+    Buffer.add_string buf @@ fmt v.data.(0);
 
     for i = 1 to v.length - 1 do
       Buffer.add_string buf ", ";
-      Buffer.add_string buf (fmt (unchecked_get v i))
+      Buffer.add_string buf (fmt v.data.(i))
     done;
 
     Buffer.add_char buf ']';
