@@ -1,5 +1,6 @@
 (lang dune 2.4)
 (name vec)
+(version 0.2.0)
 
 (generate_opam_files true)
 (license "MIT")
@@ -15,4 +16,5 @@
  (description "This library provides efficient dynamic arrays with Rust-like mutability permissions.")
  (depends
   (dune (>= 2.4))
-  (ocaml (>= "4.08.0"))))
+  (ocaml (>= "4.08.0"))
+  (odoc :with-doc)))
