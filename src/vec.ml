@@ -1,13 +1,12 @@
 type ('a, -'p) t =
   { mutable growth_rate: float
   ; mutable length: int
-  ; mutable capacity: int
   ; mutable data: 'a array
   }
 
 let default_growth_rate = 2.
 
-let array_uninit n = Array.make n (Obj.magic 0)
+let[@inline] array_uninit n = Array.make n (Obj.magic 0)
 
 let make ?growth_rate:(gr=default_growth_rate) ?capacity:(c=0) () =
   if gr <= 1. then
@@ -17,7 +16,6 @@ let make ?growth_rate:(gr=default_growth_rate) ?capacity:(c=0) () =
   else
     { growth_rate = gr
     ; length = 0
-    ; capacity = c
     ; data = array_uninit c
     }
 
@@ -25,19 +23,19 @@ external as_read_only: ('a, [> `R]) t -> ('a, [`R]) t = "%identity"
 
 external as_write_only: ('a, [> `W]) t -> ('a, [`W]) t = "%identity"
 
-let length v = v.length
-let capacity v = v.capacity
+let[@inline] length v = v.length
+let[@inline] capacity v = Array.length v.data
 
-let growth_rate v = v.growth_rate
+let[@inline] growth_rate v = v.growth_rate
 let set_growth_rate gr v =
   if gr <= 1. then
     raise (Invalid_argument "growth_rate <= 1")
   else
     v.growth_rate <- gr
 
-let get_exn v idx = v.data.(idx)
+let[@inline] get_exn v idx = v.data.(idx)
 
-let set_exn v idx val' = v.data.(idx) <- val'
+let[@inline] set_exn v idx val' = v.data.(idx) <- val'
 
 let get v idx =
   if idx < 0 || idx >= v.length then
@@ -52,22 +50,20 @@ let set v idx val' =
     (v.data.(idx) <- val'; true)
 
 let ensure_capacity c v =
+  let capacity = capacity v in
   if c < 0 then
     raise (Invalid_argument "capacity < 0")
-  else if c <= v.capacity then
+  else if c <= capacity then
     ()
   else begin
-    let cap = ref (if v.capacity = 0 then v.growth_rate else float_of_int v.capacity) in
+    let cap = ref (if capacity = 0 then v.growth_rate else float_of_int capacity) in
     let c = float_of_int c in
     while !cap < c do
       cap := !cap *. v.growth_rate
     done;
 
-    v.capacity <- int_of_float !cap;
-
-    let data = array_uninit v.capacity in
+    let data = array_uninit (int_of_float !cap) in
     Array.blit v.data 0 data 0 v.length;
-
     v.data <- data
   end
 
@@ -75,14 +71,12 @@ let reserve c v =
   if c < 0 then
     raise (Invalid_argument "amount_to_reserve < 0")
   else
-    ensure_capacity (v.capacity + c) v
+    ensure_capacity (capacity v + c) v
 
 let shrink_to_fit v =
-  if v.capacity > v.length then
+  if capacity v > v.length then
     let data = array_uninit v.length in
     Array.blit v.data 0 data 0 v.length;
-
-    v.capacity <- v.length;
     v.data <- data
 
 let push val' v =
@@ -103,7 +97,6 @@ let pop v =
 let singleton a =
   { growth_rate = default_growth_rate
   ; length = 1
-  ; capacity = 1
   ; data = [|a|]
   }
 
@@ -217,14 +210,22 @@ let filteri f v =
 
   v2
 
-let of_list l =
-  let rec go v = function
-    | [] -> ()
-    | a :: rest -> push a v; go v rest
-  in
-  let v = make () in
-  go v l;
-  v
+let of_array_steal a =
+  { growth_rate = default_growth_rate
+  ; length = Array.length a
+  ; data = a
+  }
+
+let steal v =
+  let data = v.data in
+  v.length <- 0;
+  v.data <- [||];
+  data
+
+let of_array a = of_array_steal (Array.copy a)
+let to_array v = Array.sub v.data 0 v.length
+
+let of_list l = of_array_steal (Array.of_list l)
 
 let to_list v =
   let l = ref [] in
@@ -233,24 +234,6 @@ let to_list v =
   done;
 
   !l
-
-let of_array_steal a =
-  let length = Array.length a in
-  { growth_rate = default_growth_rate
-  ; length = length
-  ; capacity = length
-  ; data = a
-  }
-
-let steal v =
-  let data = v.data in
-  v.length <- 0;
-  v.capacity <- 0;
-  v.data <- [||];
-  data
-
-let of_array a = of_array_steal (Array.copy a)
-let to_array v = Array.sub v.data 0 v.length
 
 let copy v = of_array_steal (to_array v)
 
@@ -304,8 +287,8 @@ let all f v =
 
   !done'
 
-let mem e = any ((=) e)
-let memq e = any ((==) e)
+let[@inline] mem e = any ((=) e)
+let[@inline] memq e = any ((==) e)
 
 let fold_left f z v =
   let z = ref z in
@@ -338,13 +321,13 @@ let zip_with f v1 v2 =
 
   v
 
-let zip v1 v2 = zip_with (fun a b -> (a, b)) v1 v2
+let[@inline] zip v1 v2 = zip_with (fun a b -> (a, b)) v1 v2
 
 let sort_by f v =
   shrink_to_fit v;
   Array.fast_sort f v.data
 
-let sort v = sort_by compare v
+let[@inline] sort v = sort_by compare v
 
 let pretty_print fmt v =
   if v.length = 0 then
@@ -376,28 +359,28 @@ let iota start end' =
   v
 
 module Infix = struct
-  let (.![]) = get_exn
-  let (.![]<-) = set_exn
+  let[@inline] (.![]) = get_exn
+  let[@inline] (.![]<-) = set_exn
 
-  let (.?[]) = get
-  let (.?[]<-) = set
+  let[@inline] (.?[]) = get
+  let[@inline] (.?[]<-) = set
 
-  let (=|<) = map
-  let (>|=) v f = f =|< v
+  let[@inline] (=|<) = map
+  let[@inline] (>|=) v f = f =|< v
 
-  let (<$>) = map
-  let (<*>) = apply
+  let[@inline] (<$>) = map
+  let[@inline] (<*>) = apply
 
-  let (=<<) = flat_map
-  let (>>=) v f = f =<< v
+  let[@inline] (=<<) = flat_map
+  let[@inline] (>>=) v f = f =<< v
 
-  let (--) = iota
+  let[@inline] (--) = iota
 end
 
 module Let_syntax = struct
-  let (let+) v f = map f v
-  let (and+) = cartesian_product
+  let[@inline] (let+) v f = map f v
+  let[@inline] (and+) = cartesian_product
 
-  let (let*) v f = flat_map f v
-  let (and*) = cartesian_product
+  let[@inline] (let*) v f = flat_map f v
+  let[@inline] (and*) = cartesian_product
 end
