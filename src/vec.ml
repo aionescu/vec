@@ -6,19 +6,17 @@ type ('a, -'p) t =
   }
 
 let default_growth_rate = 2.
-let default_capacity = 0
-let default_length = 0
 
 let array_uninit n = Array.make n (Obj.magic 0)
 
-let make ?growth_rate:(gr=default_growth_rate) ?capacity:(c=default_capacity) () =
+let make ?growth_rate:(gr=default_growth_rate) ?capacity:(c=0) () =
   if gr <= 1. then
-    raise (Invalid_argument "growth_rate <= 1.")
+    raise (Invalid_argument "growth_rate <= 1")
   else if c < 0 then
     raise (Invalid_argument "capacity < 0")
   else
     { growth_rate = gr
-    ; length = default_length
+    ; length = 0
     ; capacity = c
     ; data = array_uninit c
     }
@@ -33,7 +31,7 @@ let capacity v = v.capacity
 let growth_rate v = v.growth_rate
 let set_growth_rate gr v =
   if gr <= 1. then
-    raise (Invalid_argument "growth_rate <= 1.")
+    raise (Invalid_argument "growth_rate <= 1")
   else
     v.growth_rate <- gr
 
@@ -103,9 +101,11 @@ let pop v =
     Some val'
 
 let singleton a =
-  let v = make ~capacity:1 () in
-  push a v;
-  v
+  { growth_rate = default_growth_rate
+  ; length = 1
+  ; capacity = 1
+  ; data = [|a|]
+  }
 
 let map f v =
   let v2 = make ~growth_rate:v.growth_rate ~capacity:v.length () in
@@ -250,12 +250,9 @@ let steal v =
   data
 
 let of_array a = of_array_steal (Array.copy a)
-let copy v = of_array v.data
+let to_array v = Array.sub v.data 0 v.length
 
-let to_array v =
-  let a = array_uninit v.length in
-  Array.blit v.data 0 a 0 v.length;
-  a
+let copy v = of_array_steal (to_array v)
 
 let rev_in_place v =
   let i = ref 0 in
