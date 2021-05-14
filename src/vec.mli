@@ -59,28 +59,28 @@ val pop: ('a, [> `R | `W]) t -> 'a option
 (** Pops off the item from the end of the vector. *)
 
 val map: ('a -> 'b) -> ('a, [> `R]) t -> ('b, [`R | `W]) t
-(** Maps the specified function over the vector, returning a new vector. (Functorial map operation) *)
+(** Maps the specified function over the vector, returning a new vector. (Functor [map] operation) *)
 
 val mapi: (int -> 'a -> 'b) -> ('a, [> `R]) t -> ('b, [`R | `W]) t
 (** Like {!map}, but the function also takes the item's index as a parameter. *)
 
 val map_in_place: ('a -> 'a) -> ('a, [`R | `W]) t -> unit
-(** Like {!map}, but the transformation is done in-place, so no new vector gets created. *)
+(** Like {!map}, but the transformation is done in-place. *)
 
 val singleton: 'a -> ('a, [`R | `W]) t
-(** Returns a singleton vector containing the specified item. (Applicative functor pure operation) *)
+(** Returns a singleton vector containing the specified item. (Applicative functor [pure] operation) *)
 
 val map2: ('a -> 'b -> 'c) -> ('a, [> `R]) t -> ('b, [> `R]) t -> ('c, [`R | `W]) t
-(** Maps the specified function over all combinations of tuples from the 2 specified vectors, returning a new vector. (Applicative functor liftA2 operation *)
+(** Maps the specified function over all combinations of tuples from the 2 specified vectors, returning a new vector. (Applicative functor [liftA2] operation *)
 
 val apply: ('a -> 'b, [> `R]) t -> ('a, [> `R]) t -> ('b, [`R | `W]) t
-(** Applies every function from the first vector to every value from the second vector, returning a new vector. (Applicatve functor <*> operation) *)
+(** Applies every function from the first vector to every value from the second vector, returning a new vector. (Applicatve functor [ap] operation) *)
 
 val flatten: (('a, [> `R]) t, [> `R]) t -> ('a, [`R | `W]) t
-(** Flattens nested vectors into a single, one-dimensional vector. (Monadic join operation) *)
+(** Flattens nested vectors into a single, one-dimensional vector. (Monad [join] operation) *)
 
 val flat_map: ('a -> ('b, [> `R]) t) -> ('a, [> `R]) t -> ('b, [`R | `W]) t
-(** Like {!map}, but flattens the result. (Monadic bind operation) *)
+(** Like {!map}, but flattens the result. (Monad [bind] operation) *)
 
 val cartesian_product: ('a, [> `R]) t -> ('b, [> `R]) t -> ('a * 'b, [`R | `W]) t
 (** Cartesian product of 2 vectors. (Equivalent to [liftA2 (,)]) *)
@@ -93,6 +93,9 @@ val iteri: (int -> 'a -> unit) -> ('a, [> `R]) t -> unit
 
 val filter: ('a -> bool) -> ('a, [> `R]) t -> ('a, [`R | `W]) t
 (** Returns a new vector containing only the items from the first vector that satisfy the specified predicate. *)
+
+val filteri: (int -> 'a -> bool) -> ('a, [> `R]) t -> ('a, [`R | `W]) t
+(** Like {!filter}, but the predicate also takes the item's index as a parameter. *)
 
 val of_list: 'a list -> ('a, [`R | `W]) t
 (** Constructs a vector from the specified list. *)
@@ -116,7 +119,7 @@ val rev: ('a, [> `R]) t -> ('a, [`R | `W]) t
 (** Returns a new vector that contains all the items in the specified vector, but in reverse order. *)
 
 val rev_in_place: ('a, [`R | `W]) t -> unit
-(** Reverses the vector in-place, without allocating a new vector. *)
+(** Reverses the vector in-place. *)
 
 val append: ('a, [`R | `W]) t -> ('a, [> `R]) t -> unit
 (** Appends the second vector to the first vector. *)

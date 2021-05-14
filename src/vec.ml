@@ -206,6 +206,17 @@ let filter f v =
 
   v2
 
+let filteri f v =
+  let v2 = make ~growth_rate:v.growth_rate ~capacity:v.length () in
+
+  for i = 0 to v.length - 1 do
+    let e = v.data.(i) in
+    if f i e then
+      push e v2
+  done;
+
+  v2
+
 let of_list l =
   let rec go v = function
     | [] -> ()
