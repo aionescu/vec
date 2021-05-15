@@ -36,16 +36,22 @@ let[@inline] clear v =
   v.length <- 0;
   v.data <- [||]
 
-let[@inline] get_exn v idx = v.data.(idx)
+let[@inline] get_exn v i =
+  if i < 0 || i >= v.length
+  then raise (Invalid_argument "Index out of range")
+  else v.data.(i)
 
-let[@inline] set_exn v idx val' = v.data.(idx) <- val'
+let[@inline] set_exn v i a =
+  if i < 0 || i >= v.length
+  then raise (Invalid_argument "Index out of range")
+  else v.data.(i) <- a
 
-let get v idx =
-  if idx < 0 || idx >= v.length
+let get v i =
+  if i < 0 || i >= v.length
   then None
-  else Some v.data.(idx)
+  else Some v.data.(i)
 
-let[@inline] set v idx val' = idx >= 0 && idx < v.length && (v.data.(idx) <- val'; true)
+let[@inline] set v i a = i >= 0 && i < v.length && (v.data.(i) <- a; true)
 
 let ensure_capacity c v =
   let capacity = capacity v in
