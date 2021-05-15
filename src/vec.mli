@@ -100,6 +100,9 @@ val filter: ('a -> bool) -> ('a, [> `R]) t -> ('a, [`R | `W]) t
 val filteri: (int -> 'a -> bool) -> ('a, [> `R]) t -> ('a, [`R | `W]) t
 (** Like {!filter}, but the predicate also takes the item's index as a parameter. *)
 
+val filter_in_place: ('a -> bool) -> ('a, [`R | `W]) t -> unit
+(** Performs a filter in-place, based on the specified predicate. *)
+
 val of_list: 'a list -> ('a, [`R | `W]) t
 (** Constructs a vector from the specified list. *)
 

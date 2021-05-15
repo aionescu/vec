@@ -185,25 +185,45 @@ let iteri f v =
 
 let filter f v =
   let v2 = make ~growth_rate:v.growth_rate ~capacity:v.length () in
+  let l = ref 0 in
 
   for i = 0 to v.length - 1 do
     let e = v.data.(i) in
     if f e then
-      push e v2
+      (v2.data.(!l) <- e; incr l)
   done;
 
+  v2.length <- !l;
   v2
 
 let filteri f v =
   let v2 = make ~growth_rate:v.growth_rate ~capacity:v.length () in
+  let l = ref 0 in
 
   for i = 0 to v.length - 1 do
     let e = v.data.(i) in
     if f i e then
-      push e v2
+      (v2.data.(!l) <- e; incr l)
   done;
 
+  v2.length <- !l;
   v2
+
+let filter_in_place f v =
+  let old_l = v.length in
+  let l = ref 0 in
+
+  for i = 0 to old_l - 1 do
+    let e = v.data.(i) in
+    if f e then
+      (v.data.(!l) <- e; incr l)
+  done;
+
+  for i = !l to old_l - 1 do
+    v.data.(i) <- Obj.magic 0
+  done;
+
+  v.length <- !l
 
 let[@inline] of_array_steal a =
   { growth_rate = default_growth_rate
@@ -243,11 +263,14 @@ let[@inline] rev v =
   v'
 
 let append v v2 =
-  reserve v2.length v;
+  let l = v.length + v2.length in
+  ensure_capacity l v;
 
   for i = 0 to v2.length - 1 do
-    push v2.data.(i) v
-  done
+    v.data.(i + v.length) <- v2.data.(i)
+  done;
+
+  v.length <- l
 
 let exists f v =
   let rec go i = i <> v.length && (f v.data.(i) || go (i + 1))
@@ -315,14 +338,23 @@ let pretty_print fmt v =
 
 let iota start end' =
   let v = make ~capacity:(abs (end' - start)) () in
-  if start > end' then
-    for i = start downto end' do
-      push i v
-    done
-  else
-    for i = start to end' do
-      push i v
-    done;
+  let rec inc i crr =
+    if crr <= end' then begin
+      v.data.(i) <- crr;
+      inc (i + 1) (crr + 1)
+    end
+  in
+  let rec dec i crr =
+    if crr >= end' then begin
+      v.data.(i) <- crr;
+      dec (i + 1) (crr - 1)
+    end
+  in
+
+  if start > end'
+  then inc 0 start
+  else dec 0 start;
+
   v
 
 module Infix = struct
