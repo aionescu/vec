@@ -45,7 +45,7 @@ let get v idx =
   then None
   else Some v.data.(idx)
 
-let set v idx val' = idx >= 0 && idx < v.length && (v.data.(idx) <- val'; true)
+let[@inline] set v idx val' = idx >= 0 && idx < v.length && (v.data.(idx) <- val'; true)
 
 let ensure_capacity c v =
   let capacity = capacity v in
@@ -89,7 +89,7 @@ let pop v =
     v.length <- v.length - 1;
     Some val'
 
-let singleton a =
+let[@inline] singleton a =
   { growth_rate = default_growth_rate
   ; length = 1
   ; data = [|a|]
@@ -138,7 +138,7 @@ let map2 f v1 v2 =
 
   v
 
-let apply f v = map2 (@@) f v
+let[@inline] apply f v = map2 (@@) f v
 
 let flatten vs =
   let max_gr = ref 0. in
@@ -169,9 +169,9 @@ let flatten vs =
 
   v
 
-let flat_map f v = flatten (map f v)
+let[@inline] flat_map f v = flatten (map f v)
 
-let cartesian_product a b = map2 (fun a b -> a, b) a b
+let[@inline] cartesian_product a b = map2 (fun a b -> a, b) a b
 
 let iter f v =
   for i = 0 to v.length - 1 do
@@ -205,16 +205,16 @@ let filteri f v =
 
   v2
 
-let of_array_steal a =
+let[@inline] of_array_steal a =
   { growth_rate = default_growth_rate
   ; length = Array.length a
   ; data = a
   }
 
-let of_array a = of_array_steal (Array.copy a)
-let to_array v = Array.sub v.data 0 v.length
+let[@inline] of_array a = of_array_steal (Array.copy a)
+let[@inline] to_array v = Array.sub v.data 0 v.length
 
-let of_list l = of_array_steal (Array.of_list l)
+let[@inline] of_list l = of_array_steal (Array.of_list l)
 
 let to_list v =
   let rec go acc = function
@@ -223,7 +223,7 @@ let to_list v =
   in
   go [] (v.length - 1)
 
-let copy v = of_array_steal (to_array v)
+let[@inline] copy v = of_array_steal (to_array v)
 
 let rev_in_place v =
   let[@inline] swap i j =
@@ -237,7 +237,7 @@ let rev_in_place v =
   in
   go 0 (v.length - 1)
 
-let rev v =
+let[@inline] rev v =
   let v' = copy v in
   rev_in_place v';
   v'
@@ -290,7 +290,7 @@ let zip_with f v1 v2 =
 
 let[@inline] zip v1 v2 = zip_with (fun a b -> (a, b)) v1 v2
 
-let sort_by f v =
+let[@inline] sort_by f v =
   shrink_to_fit v;
   Array.fast_sort f v.data
 
