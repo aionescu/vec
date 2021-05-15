@@ -5,6 +5,9 @@ type ('a, -'p) t
 (** The 'p type parameter is a phantom type parameter that represents the vector's mutability.
 It is [[`R | `W]] for read-write vectors, [[`R]] for read-only vectors, or [[`W]] for write-only vectors. *)
 
+val default_growth_rate: float
+(** The default growth rate of newly-created vectors. *)
+
 val make: ?growth_rate:float -> ?capacity:int -> unit -> ('a, [`R | `W]) t
 (** Constructs a vector with the specified growth rate and capacity. *)
 
