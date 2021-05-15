@@ -142,7 +142,7 @@ val memq: 'a -> ('a, [> `R]) t -> bool
 val fold_left: ('b -> 'a -> 'b) -> 'b -> ('a, [> `R]) t -> 'b
 (** Folds the specified function and default value over the array, from left to right. *)
 
-val fold_right: ('a -> 'b -> 'b) -> 'b -> ('a, [> `R]) t -> 'b
+val fold_right: ('a -> 'b -> 'b) -> ('a, [> `R]) t -> 'b -> 'b
 (** Folds the specified function and default value over the array, from right to left. *)
 
 val zip: ('a, [> `R]) t -> ('b, [> `R]) t -> ('a * 'b, [`R | `W]) t
@@ -156,6 +156,18 @@ val sort: ('a, [`R | `W]) t -> unit
 
 val sort_by: ('a -> 'a -> int) -> ('a, [`R | `W]) t -> unit
 (** Sorts the specified vector using the specified comparison function. *)
+
+val equal: ('a, [> `R]) t -> ('a, [> `R]) t -> bool
+(** Compares two vectors for equality. *)
+
+val equal_by: ('a -> 'a -> bool) -> ('a, [> `R]) t -> ('a, [> `R]) t -> bool
+(** Compares two vectors for equality, using the specified equality function for elements. *)
+
+val compare: ('a, [> `R]) t -> ('a, [> `R]) t -> int
+(** Compares two vectors lexicographically. *)
+
+val compare_by: ('a -> 'a -> int) -> ('a, [> `R]) t -> ('a, [> `R]) t -> int
+(** Compares two vectors lexicographically, using the specified comparison function for elements. *)
 
 val pretty_print: ('a -> string) -> ('a, [> `R]) t -> string
 (** Returns a string representation of the vector, using the specified function to format each value. *)

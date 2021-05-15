@@ -304,10 +304,11 @@ let fold_left f z v =
   in
   go z 0
 
-let fold_right f z v =
-  let rec go acc = function
-    | 0 -> acc
-    | i -> go (f v.data.(i) z) (i - 1)
+let fold_right f v z =
+  let rec go acc i =
+    if i <= 0
+    then acc
+    else go (f v.data.(i) acc) (i - 1)
   in
   go z (v.length - 1)
 
@@ -332,6 +333,35 @@ let[@inline] sort_by f v =
 
 let[@inline] sort v = sort_by compare v
 
+let equal_by f a b =
+  if a.length <> b.length then
+    false
+  else
+    let rec go i = i = a.length || (f a.data.(i) b.data.(i) && go (i + 1))
+    in go 0
+
+let[@inline] equal a b = equal_by (=) a b
+
+let compare_by f a b =
+  let min_l, min_l_ord =
+    match a.length - b.length with
+    | 0 -> a.length, 0
+    | l when l < 0 -> a.length, -1
+    | _ -> b.length, 1
+  in
+  let rec go i =
+    if i = min_l
+    then min_l_ord
+    else
+      let ord = f a.data.(i) b.data.(i) in
+      if ord <> 0
+      then ord
+      else go (i + 1)
+  in
+  go 0
+
+let[@inline] compare a b = compare_by compare a b
+
 let pretty_print fmt v =
   if v.length = 0 then
     "[]"
@@ -342,7 +372,7 @@ let pretty_print fmt v =
     Buffer.add_string buf @@ fmt v.data.(0);
 
     for i = 1 to v.length - 1 do
-      Buffer.add_string buf ", ";
+      Buffer.add_string buf "; ";
       Buffer.add_string buf (fmt v.data.(i))
     done;
 
@@ -350,7 +380,8 @@ let pretty_print fmt v =
     Buffer.contents buf
 
 let iota start end' =
-  let v = make ~capacity:(abs (end' - start)) () in
+  let l = (abs (end' - start) + 1) in
+  let v = make ~capacity:l () in
   let rec inc i crr =
     if crr <= end' then begin
       v.data.(i) <- crr;
@@ -364,10 +395,11 @@ let iota start end' =
     end
   in
 
-  if start > end'
+  if start < end'
   then inc 0 start
   else dec 0 start;
 
+  v.length <- l;
   v
 
 module Infix = struct
