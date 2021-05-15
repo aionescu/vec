@@ -1,5 +1,7 @@
 # vec
 
+[![OPAM](https://img.shields.io/badge/opam-v0.1.0-blue/?style=for-the-badge&logo=ocaml&color=blue)](https://opam.ocaml.org/packages/vec/)
+
 Fast, safe mutable dynamic arrays for OCaml.
 
 You can find API documentation [here](https://aionescu.github.io/vec/docs/vec/index.html).
@@ -18,16 +20,21 @@ so both ``[`R]`` vectors and ``[`R | `W]`` vectors can be passed.
 
 ## Installing
 
-The package can be found on opam [here](https://opam.ocaml.org/packages/vec/).
+The package can be found on OPAM [here](https://opam.ocaml.org/packages/vec/).
 
-To build the project, run the following in the root of the repository:
+To install it, run:
 
 ```sh
-dune build
-dune install
+opam install vec
 ```
 
-To uninstall, run `dune uninstall` in the root of the repository.
+## Building from source
+
+To build the project and run the test suite, run the following in the root of the repository:
+
+```sh
+dune build @doc @runtet
+```
 
 ## License
 
