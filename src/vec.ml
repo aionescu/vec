@@ -169,7 +169,24 @@ let flatten vs =
 
   v
 
-let[@inline] flat_map f v = flatten (map f v)
+let append v v2 =
+  let l = v.length + v2.length in
+  ensure_capacity l v;
+
+  for i = 0 to v2.length - 1 do
+    v.data.(i + v.length) <- v2.data.(i)
+  done;
+
+  v.length <- l
+
+let flat_map f v =
+  let v2 = make ~growth_rate:v.growth_rate ~capacity:v.length () in
+
+  for i = 0 to v.length - 1 do
+    append v2 (f v.data.(i))
+  done;
+
+  v2
 
 let[@inline] cartesian_product a b = map2 (fun a b -> a, b) a b
 
@@ -261,16 +278,6 @@ let[@inline] rev v =
   let v' = copy v in
   rev_in_place v';
   v'
-
-let append v v2 =
-  let l = v.length + v2.length in
-  ensure_capacity l v;
-
-  for i = 0 to v2.length - 1 do
-    v.data.(i + v.length) <- v2.data.(i)
-  done;
-
-  v.length <- l
 
 let exists f v =
   let rec go i = i <> v.length && (f v.data.(i) || go (i + 1))
