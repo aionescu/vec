@@ -121,10 +121,10 @@ val rev_in_place: ('a, [`R | `W]) t -> unit
 val append: ('a, [`R | `W]) t -> ('a, [> `R]) t -> unit
 (** Appends the second vector to the first vector. *)
 
-val any: ('a -> bool) -> ('a, [> `R]) t -> bool
+val exists: ('a -> bool) -> ('a, [> `R]) t -> bool
 (** Returns [true] if any item in the vector satisfies the specified predicate. *)
 
-val all: ('a -> bool) -> ('a, [> `R]) t -> bool
+val for_all: ('a -> bool) -> ('a, [> `R]) t -> bool
 (** Returns [true] if all items in the vector satisfies the specified predicate. *)
 
 val mem: 'a -> ('a, [> `R]) t -> bool

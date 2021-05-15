@@ -28,10 +28,9 @@ let[@inline] capacity v = Array.length v.data
 
 let[@inline] growth_rate v = v.growth_rate
 let set_growth_rate gr v =
-  if gr <= 1. then
-    raise (Invalid_argument "growth_rate <= 1")
-  else
-    v.growth_rate <- gr
+  if gr <= 1.
+  then raise (Invalid_argument "growth_rate <= 1")
+  else v.growth_rate <- gr
 
 let[@inline] clear v =
   v.length <- 0;
@@ -42,24 +41,17 @@ let[@inline] get_exn v idx = v.data.(idx)
 let[@inline] set_exn v idx val' = v.data.(idx) <- val'
 
 let get v idx =
-  if idx < 0 || idx >= v.length then
-    None
-  else
-    Some v.data.(idx)
+  if idx < 0 || idx >= v.length
+  then None
+  else Some v.data.(idx)
 
-let set v idx val' =
-  if idx < 0 || idx >= v.length then
-    false
-  else
-    (v.data.(idx) <- val'; true)
+let set v idx val' = idx >= 0 && idx < v.length && (v.data.(idx) <- val'; true)
 
 let ensure_capacity c v =
   let capacity = capacity v in
   if c < 0 then
     raise (Invalid_argument "capacity < 0")
-  else if c <= capacity then
-    ()
-  else begin
+  else if c > capacity then begin
     let cap = ref (if capacity = 0 then v.growth_rate else float_of_int capacity) in
     let c = float_of_int c in
     while !cap < c do
@@ -72,10 +64,9 @@ let ensure_capacity c v =
   end
 
 let reserve c v =
-  if c < 0 then
-    raise (Invalid_argument "amount_to_reserve < 0")
-  else
-    ensure_capacity (capacity v + c) v
+  if c < 0
+  then raise (Invalid_argument "amount_to_reserve < 0")
+  else ensure_capacity (capacity v + c) v
 
 let shrink_to_fit v =
   if capacity v > v.length then
@@ -273,14 +264,14 @@ let fold_left f z v =
   let rec go acc i =
     if i = v.length
     then acc
-    else go (f acc v.data(i)) (i + 1)
+    else go (f acc v.data.(i)) (i + 1)
   in
   go z 0
 
 let fold_right f z v =
   let rec go acc = function
     | 0 -> acc
-    | i -> go (f v.data(i) z) (i - 1)
+    | i -> go (f v.data.(i) z) (i - 1)
   in
   go z (v.length - 1)
 
@@ -335,28 +326,28 @@ let iota start end' =
   v
 
 module Infix = struct
-  let[@inline] (.![]) = get_exn
-  let[@inline] (.![]<-) = set_exn
+  let (.![]) = get_exn
+  let (.![]<-) = set_exn
 
-  let[@inline] (.?[]) = get
-  let[@inline] (.?[]<-) = set
+  let (.?[]) = get
+  let (.?[]<-) = set
 
-  let[@inline] (=|<) = map
+  let (=|<) = map
   let[@inline] (>|=) v f = f =|< v
 
-  let[@inline] (<$>) = map
-  let[@inline] (<*>) = apply
+  let (<$>) = map
+  let (<*>) = apply
 
-  let[@inline] (=<<) = flat_map
-  let[@inline] (>>=) v f = f =<< v
+  let (=<<) = flat_map
+  let (>>=) v f = f =<< v
 
-  let[@inline] (--) = iota
+  let (--) = iota
 end
 
 module Let_syntax = struct
   let[@inline] (let+) v f = map f v
-  let[@inline] (and+) = cartesian_product
+  let (and+) = cartesian_product
 
   let[@inline] (let*) v f = flat_map f v
-  let[@inline] (and*) = cartesian_product
+  let (and*) = cartesian_product
 end
