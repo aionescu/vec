@@ -33,6 +33,10 @@ let set_growth_rate gr v =
   else
     v.growth_rate <- gr
 
+let[@inline] clear v =
+  v.length <- 0;
+  v.data <- [||]
+
 let[@inline] get_exn v idx = v.data.(idx)
 
 let[@inline] set_exn v idx val' = v.data.(idx) <- val'
@@ -216,42 +220,31 @@ let of_array_steal a =
   ; data = a
   }
 
-let steal v =
-  let data = v.data in
-  v.length <- 0;
-  v.data <- [||];
-  data
-
 let of_array a = of_array_steal (Array.copy a)
 let to_array v = Array.sub v.data 0 v.length
 
 let of_list l = of_array_steal (Array.of_list l)
 
 let to_list v =
-  let l = ref [] in
-  for i = v.length - 1 downto 0 do
-    l := v.data.(i) :: !l
-  done;
-
-  !l
+  let rec go acc = function
+    | -1 -> acc
+    | i -> go (v.data.(i) :: acc) (i - 1)
+  in
+  go [] (v.length - 1)
 
 let copy v = of_array_steal (to_array v)
 
 let rev_in_place v =
-  let i = ref 0 in
-  let j = ref (v.length - 1) in
-
-  while !i < !j do
-    let i' = !i in
-    let j' = !j in
-
-    let temp = v.data.(i') in
-    v.data.(i') <- v.data.(j');
-    v.data.(j') <- temp;
-
-    incr i;
-    decr j
-  done
+  let[@inline] swap i j =
+    let temp = v.data.(i) in
+    v.data.(i) <- v.data.(j);
+    v.data.(j) <- temp
+  in
+  let rec go i j =
+    if i < j
+    then (swap i j; go (i + 1) (j - 1))
+  in
+  go 0 (v.length - 1)
 
 let rev v =
   let v' = copy v in
@@ -265,48 +258,31 @@ let append v v2 =
     push v2.data.(i) v
   done
 
-let any f v =
-  let done' = ref false in
-  let i = ref 0 in
+let exists f v =
+  let rec go i = i <> v.length && (f v.data.(i) || go (i + 1))
+  in go 0
 
-  while not !done' && !i < v.length do
-    if f v.data.(!i) then
-      done' := true
-  done;
+let for_all f v =
+  let rec go i = i = v.length || (f v.data.(i) && go (i + 1))
+  in go 0
 
-  !done'
-
-let all f v =
-  let done' = ref true in
-  let i = ref 0 in
-
-  while !done' && !i < v.length do
-    if not (f v.data.(!i)) then
-      done' := false
-  done;
-
-  !done'
-
-let[@inline] mem e = any ((=) e)
-let[@inline] memq e = any ((==) e)
+let[@inline] mem e = exists ((=) e)
+let[@inline] memq e = exists ((==) e)
 
 let fold_left f z v =
-  let z = ref z in
-
-  for i = 0 to v.length - 1 do
-    z := f !z v.data.(i)
-  done;
-
-  !z
+  let rec go acc i =
+    if i = v.length
+    then acc
+    else go (f acc v.data(i)) (i + 1)
+  in
+  go z 0
 
 let fold_right f z v =
-  let z = ref z in
-
-  for i = v.length - 1 downto 0 do
-    z := f v.data.(i) !z
-  done;
-
-  !z
+  let rec go acc = function
+    | 0 -> acc
+    | i -> go (f v.data(i) z) (i - 1)
+  in
+  go z (v.length - 1)
 
 let zip_with f v1 v2 =
   let min_length = min v1.length v2.length in

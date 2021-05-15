@@ -29,6 +29,9 @@ val growth_rate: ('a, [> `R]) t -> float
 val set_growth_rate: float -> ('a, [`R | `W]) t -> unit
 (** Sets the growth rate of the specified vector to the specified value. *)
 
+val clear: ('a, [`R | `W]) t -> unit
+(** Resets the vector to an empty state. *)
+
 val get_exn: ('a, [> `R]) t -> int -> 'a
 (** Gets the value in the vector at the specified index.
     @raise Invalid_argument if the index is out of bounds. *)
@@ -49,13 +52,13 @@ val ensure_capacity: int -> ('a, [> `W]) t -> unit
 val reserve: int -> ('a, [> `W]) t -> unit
 (** Increases the vector's capacity by the specified value. *)
 
-val shrink_to_fit: ('a, [> `R | `W]) t -> unit
+val shrink_to_fit: ('a, [`R | `W]) t -> unit
 (** Shrinks the vector's internal buffer to only be as large as the vector's length. *)
 
 val push: 'a -> ('a, [> `W]) t -> unit
 (** Pushes the specified item onto the end of the vector. *)
 
-val pop: ('a, [> `R | `W]) t -> 'a option
+val pop: ('a, [`R | `W]) t -> 'a option
 (** Pops off the item from the end of the vector. *)
 
 val map: ('a -> 'b) -> ('a, [> `R]) t -> ('b, [`R | `W]) t
@@ -108,12 +111,6 @@ val of_array: 'a array -> ('a, [`R | `W]) t
 
 val to_array: ('a, [> `R]) t -> 'a array
 (** Constructs an array from the specified vector. *)
-
-val of_array_steal: 'a array -> ('a, [`R | `W]) t
-(** Constructs a new vector using the specified array as a buffer. If the array is modified afterwards, the vector is also modified. *)
-
-val steal: ('a, [> `R | `W]) t -> 'a array
-(** Returns the vector's internal buffer, and resets the vector to an empty state. *)
 
 val rev: ('a, [> `R]) t -> ('a, [`R | `W]) t
 (** Returns a new vector that contains all the items in the specified vector, but in reverse order. *)
