@@ -1,6 +1,6 @@
 # vec
 
-[![OPAM](https://img.shields.io/badge/opam-v0.1.0-blue/?style=for-the-badge&logo=ocaml&color=blue)](https://opam.ocaml.org/packages/vec/)
+[![OPAM](https://img.shields.io/badge/dynamic/json?color=blue&label=OPAM&style=for-the-badge&logo=ocaml&prefix=v&query=version&url=https%3A%2F%2Fraw.githubusercontent.com%2Faionescu%2Fvec%2Fmain%2Fbadge%2Fversion.json)](https://opam.ocaml.org/packages/vec/)
 
 Fast, safe mutable dynamic arrays for OCaml.
 
