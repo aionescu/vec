@@ -17,4 +17,5 @@
  (depends
   (dune (>= 2.4))
   (ocaml (>= "4.08.0"))
-  (odoc :with-doc)))
+  (odoc :with-doc)
+  (ounit2 :with-test)))
