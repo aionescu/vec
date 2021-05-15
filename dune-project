@@ -1,8 +1,8 @@
-(lang dune 2.4)
+(lang dune 2.8)
+(generate_opam_files true)
+
 (name vec)
 (version 0.2.0)
-
-(generate_opam_files true)
 (license "MIT")
 (maintainers "alxi.2001@gmail.com")
 (authors "Alex Ionescu")
@@ -11,11 +11,11 @@
 (documentation "https://aionescu.github.io/vec/docs/vec/index.html")
 
 (package
- (name vec)
- (synopsis "Fast, safe mutable dynamic arrays")
- (description "This library provides efficient dynamic arrays with Rust-like mutability permissions.")
- (depends
-  (dune (>= 2.4))
-  (ocaml (>= "4.08.0"))
-  (odoc :with-doc)
-  (ounit2 :with-test)))
+  (name vec)
+  (synopsis "Fast, safe mutable dynamic arrays")
+  (description "This library provides efficient dynamic arrays with Rust-like mutability permissions.")
+  (depends
+    (dune (>= 2.8))
+    (ocaml (>= "4.08.0"))
+    (odoc :with-doc)
+    (ounit2 :with-test)))
