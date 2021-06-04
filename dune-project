@@ -2,7 +2,7 @@
 (generate_opam_files true)
 
 (name vec)
-(version 0.2.0)
+(version 0.3.0)
 (license "MIT")
 (maintainers "alxi.2001@gmail.com")
 (authors "Alex Ionescu")
