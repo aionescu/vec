@@ -19,18 +19,24 @@ let make ?growth_rate:(gr=default_growth_rate) ?capacity:(c=0) () =
     ; data = array_uninit c
     }
 
-external as_read_only: ('a, [> `R]) t -> ('a, [`R]) t = "%identity"
+let as_read_only v = (v :> ('a, [`R]) t)
 
-external as_write_only: ('a, [> `W]) t -> ('a, [`W]) t = "%identity"
+let as_write_only v = (v :> ('a, [`W]) t)
 
 let[@inline] length v = v.length
 let[@inline] capacity v = Array.length v.data
 
 let[@inline] growth_rate v = v.growth_rate
+
 let set_growth_rate gr v =
   if gr <= 1.
   then raise (Invalid_argument "growth_rate <= 1")
   else v.growth_rate <- gr
+
+let ensure_growth_rate gr v =
+  if gr <= 1.
+  then raise (Invalid_argument "growth_rate <= 1")
+  else v.growth_rate <- max gr v.growth_rate
 
 let[@inline] clear v =
   v.length <- 0;
@@ -54,25 +60,23 @@ let get v i =
 let[@inline] set v i a = i >= 0 && i < v.length && (v.data.(i) <- a; true)
 
 let ensure_capacity c v =
-  let capacity = capacity v in
   if c < 0 then
-    raise (Invalid_argument "capacity < 0")
-  else if c > capacity then begin
-    let cap = ref (if capacity = 0 then v.growth_rate else float_of_int capacity) in
-    let c = float_of_int c in
-    while !cap < c do
-      cap := !cap *. v.growth_rate
-    done;
+    raise (Invalid_argument "amount < 0")
+  else
+    let cap = capacity v in
+    let target_cap = length v + c in
+    if target_cap > cap then begin
+      let cap = ref (if cap = 0 then v.growth_rate else float_of_int cap) in
+      let target_cap = float_of_int target_cap in
 
-    let data = array_uninit (int_of_float !cap) in
-    Array.blit v.data 0 data 0 v.length;
-    v.data <- data
-  end
+      while !cap < target_cap do
+        cap := !cap *. v.growth_rate
+      done;
 
-let reserve c v =
-  if c < 0
-  then raise (Invalid_argument "amount_to_reserve < 0")
-  else ensure_capacity (capacity v + c) v
+      let data = array_uninit (int_of_float !cap) in
+      Array.blit v.data 0 data 0 v.length;
+      v.data <- data
+    end
 
 let shrink_to_fit v =
   if capacity v > v.length then
@@ -81,7 +85,7 @@ let shrink_to_fit v =
     v.data <- data
 
 let push val' v =
-  ensure_capacity (v.length + 1) v;
+  ensure_capacity 1 v;
   let length = v.length in
   v.length <- length + 1;
   v.data.(length) <- val'
@@ -175,21 +179,20 @@ let flatten vs =
 
   v
 
-let append v v2 =
-  let l = v.length + v2.length in
-  ensure_capacity l v;
+let append_in_place v v2 =
+  ensure_capacity v2.length v;
 
   for i = 0 to v2.length - 1 do
     v.data.(i + v.length) <- v2.data.(i)
   done;
 
-  v.length <- l
+  v.length <- v.length + v2.length
 
 let flat_map f v =
   let v2 = make ~growth_rate:v.growth_rate ~capacity:v.length () in
 
   for i = 0 to v.length - 1 do
-    append v2 (f v.data.(i))
+    append_in_place v2 (f v.data.(i))
   done;
 
   v2
@@ -267,6 +270,11 @@ let to_list v =
   go [] (v.length - 1)
 
 let[@inline] copy v = of_array_steal (to_array v)
+
+let append v v2 =
+  let v' = copy v in
+  append_in_place v' v2;
+  v'
 
 let rev_in_place v =
   let[@inline] swap i j =
@@ -379,7 +387,7 @@ let pretty_print fmt v =
     Buffer.add_char buf ']';
     Buffer.contents buf
 
-let iota start end' =
+let range start end' =
   let l = (abs (end' - start) + 1) in
   let v = make ~capacity:l () in
   let rec inc i crr =
@@ -409,6 +417,8 @@ module Infix = struct
   let (.?[]) = get
   let (.?[]<-) = set
 
+  let (@) = append
+
   let (=|<) = map
   let[@inline] (>|=) v f = f =|< v
 
@@ -418,7 +428,7 @@ module Infix = struct
   let (=<<) = flat_map
   let (>>=) v f = f =<< v
 
-  let (--) = iota
+  let (--) = range
 end
 
 module Let_syntax = struct

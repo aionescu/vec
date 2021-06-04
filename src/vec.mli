@@ -1,38 +1,46 @@
-(** {1 Mutable dynamic array} *)
+(** {1 Mutable dynamic arrays} *)
 
 type ('a, -'p) t
 
 (** The 'p type parameter is a phantom type parameter that represents the vector's mutability.
-It is [[`R | `W]] for read-write vectors, [[`R]] for read-only vectors, or [[`W]] for write-only vectors. *)
+
+    It is [[`R | `W]] for read-write vectors, [[`R]] for read-only vectors, or [[`W]] for write-only vectors. *)
 
 val default_growth_rate: float
 (** The default growth rate of newly-created vectors. *)
 
 val make: ?growth_rate:float -> ?capacity:int -> unit -> ('a, [`R | `W]) t
-(** Constructs a vector with the specified growth rate and capacity. *)
+(** Constructs a vector with the specified growth rate and capacity.
+
+    Growth rate defaults to {!default_growth_rate}.
+
+    Capacity defaults to 0. *)
 
 val copy: ('a, [> `R]) t -> ('a, [`R | `W]) t
-(** Creates a copy of the specified vector. *)
+(** Creates a copy of the vector. *)
 
 val as_read_only: ('a, [> `R]) t -> ('a, [`R]) t
-(** Reinterprets the specified vector as a read-only vector. *)
+(** Reinterprets the vector as a read-only vector. *)
 
 val as_write_only: ('a, [> `W]) t -> ('a, [`W]) t
-(** Reinterprets the specified vector as a write-only vector. *)
+(** Reinterprets the vector as a write-only vector. *)
 
-val length: ('a, [> ]) t -> int
-(** Returns the length of the specified vector. *)
+val length: ('a, [>]) t -> int
+(** Returns the length of the vector. *)
 
-val capacity: ('a, [> ]) t -> int
-(** Returns the capacity of the specified vector. *)
+val capacity: ('a, [>]) t -> int
+(** Returns the capacity of the vector. *)
 
-val growth_rate: ('a, [> `R]) t -> float
-(** Returns the growth rate of the specified vector. *)
+val growth_rate: ('a, [>]) t -> float
+(** Returns the growth rate of the vector. *)
 
-val set_growth_rate: float -> ('a, [`R | `W]) t -> unit
-(** Sets the growth rate of the specified vector to the specified value. *)
+val set_growth_rate: float -> ('a, [> `W]) t -> unit
+(** Sets the growth rate of vector to the specified value. *)
 
-val clear: ('a, [`R | `W]) t -> unit
+val ensure_growth_rate: float -> ('a, [> `W]) t -> unit
+(** Ensures the vector's growth rate is at least as great as the specified value. *)
+
+val clear: ('a, [> `W]) t -> unit
 (** Resets the vector to an empty state. *)
 
 val get_exn: ('a, [> `R]) t -> int -> 'a
@@ -50,12 +58,9 @@ val set: ('a, [> `W]) t -> int -> 'a -> bool
 (** Sets the value in the vector at the specified index to the specified value. Returns false if the index is out of range. *)
 
 val ensure_capacity: int -> ('a, [> `W]) t -> unit
-(** Increases the vector's capacity to be at least as large as the specified value. *)
+(** Ensures the vector's buffer has at least as many free slots as the specified value. *)
 
-val reserve: int -> ('a, [> `W]) t -> unit
-(** Increases the vector's capacity by the specified value. *)
-
-val shrink_to_fit: ('a, [`R | `W]) t -> unit
+val shrink_to_fit: ('a, [> `W]) t -> unit
 (** Shrinks the vector's internal buffer to only be as large as the vector's length. *)
 
 val push: 'a -> ('a, [> `W]) t -> unit
@@ -77,7 +82,7 @@ val singleton: 'a -> ('a, [`R | `W]) t
 (** Returns a singleton vector containing the specified item. (Applicative functor [pure] operation) *)
 
 val map2: ('a -> 'b -> 'c) -> ('a, [> `R]) t -> ('b, [> `R]) t -> ('c, [`R | `W]) t
-(** Maps the specified function over all combinations of tuples from the 2 specified vectors, returning a new vector. (Applicative functor [liftA2] operation *)
+(** Maps the specified function over all combinations of tuples from the 2 vectors, returning a new vector. (Applicative functor [liftA2] operation *)
 
 val apply: ('a -> 'b, [> `R]) t -> ('a, [> `R]) t -> ('b, [`R | `W]) t
 (** Applies every function from the first vector to every value from the second vector, returning a new vector. (Applicatve functor [ap] operation) *)
@@ -124,14 +129,17 @@ val rev: ('a, [> `R]) t -> ('a, [`R | `W]) t
 val rev_in_place: ('a, [`R | `W]) t -> unit
 (** Reverses the vector in-place. *)
 
-val append: ('a, [`R | `W]) t -> ('a, [> `R]) t -> unit
-(** Appends the second vector to the first vector. *)
+val append: ('a, [> `R]) t -> ('a, [> `R]) t -> ('a, [`R | `W]) t
+(** Concatenates the two vectors into a new vector. *)
+
+val append_in_place: ('a, [`R | `W]) t -> ('a, [> `R]) t -> unit
+(** Appends the second vector to the first vector in-place. *)
 
 val exists: ('a -> bool) -> ('a, [> `R]) t -> bool
 (** Returns [true] if any item in the vector satisfies the specified predicate. *)
 
 val for_all: ('a -> bool) -> ('a, [> `R]) t -> bool
-(** Returns [true] if all items in the vector satisfies the specified predicate. *)
+(** Returns [true] if all items in the vector satisfy the specified predicate. *)
 
 val mem: 'a -> ('a, [> `R]) t -> bool
 (** Returns [true] if the specified item exists in the vector. Uses structural equality. *)
@@ -152,10 +160,10 @@ val zip_with: ('a -> 'b -> 'c) -> ('a, [> `R]) t -> ('b, [> `R]) t -> ('c, [`R |
 (** Zips the two vectors together, using the specified function to combine values. *)
 
 val sort: ('a, [`R | `W]) t -> unit
-(** Sorts the specified vector. *)
+(** Sorts the vector. *)
 
 val sort_by: ('a -> 'a -> int) -> ('a, [`R | `W]) t -> unit
-(** Sorts the specified vector using the specified comparison function. *)
+(** Sorts the vector using the specified comparison function. *)
 
 val equal: ('a, [> `R]) t -> ('a, [> `R]) t -> bool
 (** Compares two vectors for equality. *)
@@ -172,7 +180,7 @@ val compare_by: ('a -> 'a -> int) -> ('a, [> `R]) t -> ('a, [> `R]) t -> int
 val pretty_print: ('a -> string) -> ('a, [> `R]) t -> string
 (** Returns a string representation of the vector, using the specified function to format each value. *)
 
-val iota: int -> int -> (int, [`R | `W]) t
+val range: int -> int -> (int, [`R | `W]) t
 (** Constructs a vector containing all numbers in the specified range. *)
 
 module Infix: sig
@@ -187,6 +195,9 @@ module Infix: sig
 
   val (.?[]<-): ('a, [> `W]) t -> int -> 'a -> bool
   (** Infix version of {!set}. *)
+
+  val (@): ('a, [> `R]) t -> ('a, [> `R]) t -> ('a, [`R | `W]) t
+  (** Infix version of {!append}. *)
 
   val (=|<): ('a -> 'b) -> ('a, [> `R]) t -> ('b, [`R | `W]) t
   (** Infix version of {!map}. *)
@@ -207,7 +218,7 @@ module Infix: sig
   (** Infix version of {!flat_map}, with the arguments flipped. *)
 
   val (--): int -> int -> (int, [`R | `W]) t
-  (** Infix version of {!iota}. *)
+  (** Infix version of {!range}. *)
 end
 (** Contains infix versions of some vector operations. *)
 

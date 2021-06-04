@@ -10,17 +10,24 @@ let make _ =
   assert_equal 3. (Vec.growth_rate v)
 
 let capacity _ =
-  let v = Vec.make() in
+  let v = Vec.make () in
+
+  Vec.ensure_capacity 30 v;
+  assert_equal 32 (Vec.capacity v);
+
+  let old_cap = Vec.capacity v in
 
   Vec.ensure_capacity 20 v;
-  assert_bool "ensure_capacity" (Vec.capacity v >= 20);
-
-  Vec.reserve 30 v;
-  assert_bool "reserve" (Vec.capacity v >= 50);
+  assert_equal old_cap (Vec.capacity v);
 
   Vec.push 2 v;
   Vec.shrink_to_fit v;
-  assert_equal 1 (Vec.capacity v)
+  assert_equal 1 (Vec.capacity v);
+
+  let v = Vec.make ~growth_rate:1.5 () in
+
+  Vec.ensure_capacity 30 v;
+  assert_equal 38 (Vec.capacity v)
 
 let get_set _ =
   let v = Vec.make ~capacity:8 () in
@@ -36,14 +43,14 @@ let get_set _ =
     (fun () -> v.![0] <- 0);
 
   assert_equal None v.?[0];
-  assert_equal false (v.?[0] <- 0);
+  assert_bool "set_safe out of range" (not @@ v.?[0] <- 0);
 
   Vec.push 1 v;
 
   assert_equal () (v.![0] <- 2);
   assert_equal 2 v.![0];
 
-  assert_equal true (v.?[0] <- 3);
+  assert_bool "set_safe in range" (v.?[0] <- 3);
   assert_equal (Some 3) v.?[0]
 
 let push_pop _ =
@@ -114,7 +121,7 @@ let conversions _ =
   let v = Vec.of_list l in
   assert_equal l (Vec.to_list v);
 
-  Vec.reserve 100 v;
+  Vec.ensure_capacity 100 v;
   let a = Vec.to_array v in
   assert_equal [|1; 2; 3; 4; 5|] a;
   assert_equal 5 (Array.length a)
@@ -130,13 +137,17 @@ let rev _ =
 let append _ =
   let l1 = [1; 2; 3; 4; 5] in
   let l2 = [6; 7; 8; 9; 10] in
+  let l = List.append l1 l2 in
 
   let v = Vec.of_list l1 in
+  let v' = Vec.copy v in
   let v2 = Vec.of_list l2 in
 
-  Vec.append v v2;
-  assert_equal (l1 @ l2) (Vec.to_list v);
-  assert_equal 10 (Vec.length v)
+  Vec.append_in_place v' v2;
+  assert_equal l (Vec.to_list v');
+  assert_equal 10 (Vec.length v');
+
+  assert_equal l (Vec.to_list @@ v @ v2)
 
 let exists _ =
   let v = Vec.of_list [1; 2; 3; 4; 5] in
@@ -196,7 +207,7 @@ let equal _ =
 
   assert_bool "equal non-empty" (Vec.equal a b);
 
-  Vec.reserve 10 a;
+  Vec.ensure_capacity 10 a;
   assert_bool "equal diff capacity" (Vec.equal a b);
 
   Vec.push 6 a;
