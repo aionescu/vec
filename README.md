@@ -33,7 +33,7 @@ opam install vec
 To build the project and run the test suite, run the following in the root of the repository:
 
 ```sh
-dune build @doc @runtet
+dune build @doc @runtest
 ```
 
 ## License
