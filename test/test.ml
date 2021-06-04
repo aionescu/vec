@@ -53,6 +53,38 @@ let get_set _ =
   assert_bool "set_safe in range" (v.?[0] <- 3);
   assert_equal (Some 3) v.?[0]
 
+let find _ =
+  let v = 1 -- 5 in
+
+  assert_equal (Some 3) (Vec.find ((=) 3) v);
+  assert_equal None (Vec.find ((<) 5) v);
+
+  assert_raises
+  ~msg:"find_exn"
+  Not_found
+  (fun () -> Vec.find_exn ((<) 5) v)
+
+let add_remove_at _ =
+  let v = 1 -- 5 in
+
+  assert_equal (Some 3) (Vec.remove_at 2 v);
+  assert_equal [1; 2; 4; 5] (Vec.to_list v);
+
+  assert_equal (Some 1) (Vec.remove_at 0 v);
+  assert_equal [2; 4; 5] (Vec.to_list v);
+
+  assert_equal (Some 5) (Vec.remove_at 2 v);
+  assert_equal [2; 4] (Vec.to_list v);
+
+  assert_bool "add_at 0" (Vec.add_at 0 1 v);
+  assert_equal [1; 2; 4] (Vec.to_list v);
+
+  assert_bool "add_at 2" (Vec.add_at 2 3 v);
+  assert_equal [1; 2; 3; 4] (Vec.to_list v);
+
+  assert_bool "add_at 4" (Vec.add_at 4 5 v);
+  assert_equal [1; 2; 3; 4; 5] (Vec.to_list v)
+
 let push_pop _ =
   let v = Vec.make () in
 
@@ -249,6 +281,8 @@ let test_suite =
     [ "make" >:: make
     ; "capacity" >:: capacity
     ; "get_set" >:: get_set
+    ; "find" >:: find
+    ; "add_remove_at" >:: add_remove_at
     ; "push_pop" >:: push_pop
     ; "map" >:: map
     ; "iter" >:: iter

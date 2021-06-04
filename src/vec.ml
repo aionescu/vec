@@ -105,6 +105,57 @@ let[@inline] singleton a =
   ; data = [|a|]
   }
 
+let find f v =
+  let rec go i =
+    if i = v.length
+    then None
+    else
+      let e = v.data.(i) in
+      if f e
+      then Some e
+      else go (i + 1)
+  in
+  go 0
+
+let find_exn f v =
+  match find f v with
+  | None -> raise Not_found
+  | Some a -> a
+
+let add_at i a v =
+  if i < 0 || i > v.length
+  then false
+  else begin
+    ensure_capacity 1 v;
+
+    for i' = v.length downto i + 1  do
+      v.data.(i') <- v.data.(i' - 1)
+    done;
+
+    v.data.(i) <- a;
+    v.length <- v.length + 1;
+
+    true
+  end
+
+let remove_at i v =
+  if i < 0 || i >= v.length
+  then None
+  else begin
+    let a = v.data.(i) in
+
+    for i' = i to v.length - 2  do
+      v.data.(i') <- v.data.(i' + 1)
+    done;
+
+    v.length <- v.length - 1;
+    v.data.(v.length) <- Obj.magic 0;
+
+    Some a
+  end
+
+let[@inline] drop_at i v = Option.is_some (remove_at i v)
+
 let map f v =
   let v2 = make ~growth_rate:v.growth_rate ~capacity:v.length () in
   v2.length <- v.length;

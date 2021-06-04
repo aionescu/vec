@@ -55,7 +55,13 @@ val set_growth_rate: float -> ('a, [> `W]) t -> unit
 val ensure_growth_rate: float -> ('a, [> `W]) t -> unit
 (** Ensures the vector's growth rate is at least as great as the specified value. *)
 
-(** {1 Indexing} *)
+(** {1 Accessing elements} *)
+
+val get: ('a, [> `R]) t -> int -> 'a option
+(** Gets the value in the vector at the specified index. Returns None if the index is out of range. *)
+
+val set: ('a, [> `W]) t -> int -> 'a -> bool
+(** Sets the value in the vector at the specified index to the specified value. Returns false if the index is out of range. *)
 
 val get_exn: ('a, [> `R]) t -> int -> 'a
 (** Gets the value in the vector at the specified index.
@@ -65,11 +71,12 @@ val set_exn: ('a, [> `W]) t -> int -> 'a -> unit
 (** Sets the value in the vector at the specified index to the specified value.
     @raise Invalid_argument if the index is out of bounds. *)
 
-val get: ('a, [> `R]) t -> int -> 'a option
-(** Gets the value in the vector at the specified index. Returns None if the index is out of range. *)
+val find: ('a -> bool) -> ('a, [> `W]) t -> 'a option
+(** Returns the first element of the vector that satisfies the predicate, or [None]. *)
 
-val set: ('a, [> `W]) t -> int -> 'a -> bool
-(** Sets the value in the vector at the specified index to the specified value. Returns false if the index is out of range. *)
+val find_exn: ('a -> bool) -> ('a, [> `W]) t -> 'a
+(** Returns the first element of the vector that satisfies the predicate.
+    @raise Not_found if no element satisfies the predicate. *)
 
 (** {1 Conversions} *)
 
@@ -101,6 +108,15 @@ val push: 'a -> ('a, [> `W]) t -> unit
 
 val pop: ('a, [`R | `W]) t -> 'a option
 (** Pops off the item from the end of the vector. *)
+
+val add_at: int -> 'a -> ('a, [> `W]) t -> bool
+(** Inserts an item into the vector at the specified index. *)
+
+val remove_at: int -> ('a, [`R | `W]) t -> 'a option
+(** Removes and returns the item at the specified index. *)
+
+val drop_at: int -> ('a, [> `W]) t -> bool
+(** Removes the item at the specified index, without returning it. *)
 
 (** {1 Transformations} *)
 
