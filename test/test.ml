@@ -1,4 +1,5 @@
 open OUnit2
+open Vec.Infix
 
 let make _ =
   let v = Vec.make () in
@@ -27,23 +28,23 @@ let get_set _ =
   assert_raises
     ~msg:"get_exn"
     (Invalid_argument "Index out of range")
-    (fun () -> Vec.get_exn v 0);
+    (fun () -> v.![0]);
 
   assert_raises
     ~msg:"set_exn"
     (Invalid_argument "Index out of range")
-    (fun () -> Vec.set_exn v 0 0);
+    (fun () -> v.![0] <- 0);
 
-  assert_equal None (Vec.get v 0);
-  assert_equal false (Vec.set v 0 0);
+  assert_equal None v.?[0];
+  assert_equal false (v.?[0] <- 0);
 
   Vec.push 1 v;
 
-  assert_equal () (Vec.set_exn v 0 2);
-  assert_equal 2 (Vec.get_exn v 0);
+  assert_equal () (v.![0] <- 2);
+  assert_equal 2 v.![0];
 
-  assert_equal true (Vec.set v 0 3);
-  assert_equal (Some 3) (Vec.get v 0)
+  assert_equal true (v.?[0] <- 3);
+  assert_equal (Some 3) v.?[0]
 
 let push_pop _ =
   let v = Vec.make () in
@@ -59,9 +60,9 @@ let push_pop _ =
   assert_equal None (Vec.pop v)
 
 let map _ =
-  let v = Vec.iota 0 4 in
+  let v = 0 -- 4 in
 
-  let v' = Vec.map succ v in
+  let v' = succ <$> v in
   assert_equal [1; 2; 3; 4; 5] (Vec.to_list v');
 
   Vec.map_in_place succ v';
@@ -71,7 +72,7 @@ let map _ =
   assert_equal [0; 1; 2; 3; 4] (Vec.to_list v'')
 
 let iter _ =
-  let v = Vec.iota 0 5 in
+  let v = 0 -- 5 in
   let expected = List.fold_left (+) 0 [0; 1; 2; 3; 4; 5] in
   let actual = ref 0 in
 
@@ -91,16 +92,16 @@ let cartesian_product _ =
 
 let monad_ops _ =
   let list = [[1; 2; 3]; [4; 5; 6]; [7; 8; 9]] in
-  let a = Vec.map Vec.of_list @@ Vec.of_list list in
+  let a = Vec.of_list <$> Vec.of_list list in
   assert_equal (List.flatten list) (Vec.to_list @@ Vec.flatten a);
 
   let expected = [1; 1; 1; 2; 2; 2; 3; 3; 3; 4; 4; 4] in
   let f i = Vec.of_list [i; i; i] in
-  let a = Vec.iota 1 4 in
-  assert_equal expected (Vec.to_list @@ Vec.flat_map f a)
+  let a = 1 -- 4 in
+  assert_equal expected @@ Vec.to_list (a >>= f)
 
 let filter _ =
-  let v = Vec.iota 0 10 in
+  let v = 0 -- 10 in
   let even i = i mod 2 = 0 in
   assert_equal [0; 2; 4; 6; 8; 10] (Vec.to_list @@ Vec.filter even v);
   assert_equal (Vec.length v) (Vec.length @@ Vec.filteri (=) v);
@@ -144,13 +145,13 @@ let exists _ =
   assert_bool "exists empty" (not @@ Vec.exists (fun _ -> true) @@ Vec.make ())
 
 let for_all _ =
-  let v = Vec.iota 5 1 in
+  let v = 5 -- 1 in
   assert_bool "for_all" (Vec.for_all ((<=) 1) v);
   assert_bool "not for_all" (not @@ Vec.for_all ((<=) 3) v);
   assert_bool "for_all empty" (Vec.for_all (fun _ -> false) @@ Vec.make ())
 
 let mem _ =
-  let v = Vec.iota 1 100 in
+  let v = 1 -- 100 in
   assert_bool "mem" (Vec.mem 95 v);
   assert_bool "mem not" (not @@ Vec.mem 101 v);
 
@@ -161,7 +162,7 @@ let mem _ =
   assert_bool "memq" (not @@ Vec.memq b v)
 
 let folds _ =
-  let v = Vec.iota 1 100 in
+  let v = 1 -- 100 in
   let l = Vec.to_list v in
 
   let expected = List.fold_left (+) 0 l in
@@ -178,8 +179,8 @@ let folds _ =
   assert_equal z (Vec.fold_right (+) empty z)
 
 let zip _ =
-  let a = Vec.iota 1 3 in
-  let b = Vec.iota 4 6 in
+  let a = 1 -- 3 in
+  let b = 4 -- 6 in
 
   let expected = [1, 4; 2, 5; 3, 6] in
   assert_equal expected (Vec.to_list @@ Vec.zip a b);
@@ -191,7 +192,7 @@ let equal _ =
   assert_bool "equal empty" @@ Vec.equal (Vec.make ()) (Vec.make ());
 
   let a = Vec.of_list [1; 2; 3; 4; 5] in
-  let b = Vec.iota 1 5 in
+  let b = 1 -- 5 in
 
   assert_bool "equal non-empty" (Vec.equal a b);
 
@@ -224,7 +225,7 @@ let pretty_print _ =
 
   assert_equal "[]" (pp @@ Vec.make ());
   assert_equal "[2]" (pp @@ Vec.singleton 2);
-  assert_equal "[1; 2; 3; 4; 5]" (pp @@ Vec.iota 1 5);
+  assert_equal "[1; 2; 3; 4; 5]" (pp @@ 1 -- 5);
 
   let pp = Vec.pretty_print (fun s -> s) in
   assert_equal "[abc; def]" (pp @@ Vec.of_list ["abc"; "def"]);
