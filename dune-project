@@ -15,7 +15,6 @@
   (synopsis "Fast, safe mutable dynamic arrays")
   (description "This library provides efficient dynamic arrays with Rust-like mutability permissions.")
   (depends
-    (dune (>= 2.8))
     (ocaml (>= "4.08.0"))
     (odoc :with-doc)
     (ounit2 :with-test)))
