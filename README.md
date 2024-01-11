@@ -38,5 +38,6 @@ dune build @doc @runtest
 
 ## License
 
-This repository is licensed under the terms of the MIT License.
+This repository is licensed under the terms of the GNU General Public License v3.
+
 For more details, see [the license file](LICENSE.txt).

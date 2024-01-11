@@ -3,8 +3,8 @@
 
 (name vec)
 (version 0.3.0)
-(license "MIT")
-(maintainers "alxi.2001@gmail.com")
+(license "GPL-3.0-only")
+(maintainers "aaionescu@pm.me")
 (authors "Alex Ionescu")
 (implicit_transitive_deps false)
 (source (github aionescu/vec))
