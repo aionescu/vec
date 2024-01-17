@@ -4,86 +4,74 @@ open Vec.Infix
 let make _ =
   let v = Vec.make () in
   assert_equal 0 (Vec.length v);
-  assert_equal Vec.default_growth_rate (Vec.growth_rate v);
+  assert_equal 0 (Vec.capacity v);
 
-  let v = Vec.make ~growth_rate:3. () in
-  assert_equal 3. (Vec.growth_rate v)
+  let v = Vec.make ~capacity:8 () in
+  assert_equal 0 (Vec.length v);
+  assert_equal 8 (Vec.capacity v)
 
 let capacity _ =
   let v = Vec.make () in
 
-  Vec.ensure_capacity 30 v;
-  assert_equal 32 (Vec.capacity v);
+  Vec.reserve 30 v;
+  assert_bool "reserve" (Vec.capacity v >= 30);
 
   let old_cap = Vec.capacity v in
-
-  Vec.ensure_capacity 20 v;
+  Vec.reserve 20 v;
   assert_equal old_cap (Vec.capacity v);
 
   Vec.push 2 v;
   Vec.shrink_to_fit v;
-  assert_equal 1 (Vec.capacity v);
-
-  let v = Vec.make ~growth_rate:1.5 () in
-
-  Vec.ensure_capacity 30 v;
-  assert_equal 38 (Vec.capacity v)
+  assert_equal 1 (Vec.capacity v)
 
 let get_set _ =
   let v = Vec.make ~capacity:8 () in
 
-  assert_raises
-    ~msg:"get_exn"
-    (Invalid_argument "Index out of range")
-    (fun () -> v.![0]);
-
-  assert_raises
-    ~msg:"set_exn"
-    (Invalid_argument "Index out of range")
-    (fun () -> v.![0] <- 0);
+  assert_raises ~msg:"get out of range" (Invalid_argument "Index out of range") (fun () -> v.![0]);
+  assert_raises ~msg:"set out of range" (Invalid_argument "Index out of range") (fun () -> v.![0] <- 0);
 
   assert_equal None v.?[0];
-  assert_bool "set_safe out of range" (not @@ v.?[0] <- 0);
+  assert_bool "try_set out of range" (not @@ v.?[0] <- 0);
 
   Vec.push 1 v;
 
   assert_equal () (v.![0] <- 2);
   assert_equal 2 v.![0];
 
-  assert_bool "set_safe in range" (v.?[0] <- 3);
+  assert_bool "try_set in range" (v.?[0] <- 3);
   assert_equal (Some 3) v.?[0]
 
 let find _ =
   let v = 1 -- 5 in
 
-  assert_equal (Some 3) (Vec.find ((=) 3) v);
-  assert_equal None (Vec.find ((<) 5) v);
+  assert_equal (Some 3) (Vec.try_find ((=) 3) v);
+  assert_equal None (Vec.try_find ((<) 5) v);
 
-  assert_raises
-  ~msg:"find_exn"
-  Not_found
-  (fun () -> Vec.find_exn ((<) 5) v)
+  assert_raises ~msg:"find no match" Not_found (fun () -> Vec.find ((<) 5) v)
 
-let add_remove_at _ =
+let insert_remove _ =
   let v = 1 -- 5 in
 
-  assert_equal (Some 3) (Vec.remove_at 2 v);
+  assert_equal (Some 3) (Vec.try_remove_at 2 v);
   assert_equal [1; 2; 4; 5] (Vec.to_list v);
 
-  assert_equal (Some 1) (Vec.remove_at 0 v);
+  assert_equal (Some 1) (Vec.try_remove_at 0 v);
   assert_equal [2; 4; 5] (Vec.to_list v);
 
-  assert_equal (Some 5) (Vec.remove_at 2 v);
+  assert_equal (Some 5) (Vec.try_remove_at 2 v);
   assert_equal [2; 4] (Vec.to_list v);
 
-  assert_bool "add_at 0" (Vec.add_at 0 1 v);
+  assert_bool "try_insert_at beginning" (Vec.try_insert_at 0 1 v);
   assert_equal [1; 2; 4] (Vec.to_list v);
 
-  assert_bool "add_at 2" (Vec.add_at 2 3 v);
+  assert_bool "try_insert_at middle" (Vec.try_insert_at 2 3 v);
   assert_equal [1; 2; 3; 4] (Vec.to_list v);
 
-  assert_bool "add_at 4" (Vec.add_at 4 5 v);
-  assert_equal [1; 2; 3; 4; 5] (Vec.to_list v)
+  assert_bool "try_insert_at end" (Vec.try_insert_at 4 5 v);
+  assert_equal [1; 2; 3; 4; 5] (Vec.to_list v);
+
+  assert_raises ~msg:"insert_at out of range" (Invalid_argument "Index out of range") (fun () -> Vec.insert_at 10 10 v);
+  assert_raises ~msg:"remove_at out of range" (Invalid_argument "Index out of range") (fun () -> Vec.remove_at 10 v)
 
 let push_pop _ =
   let v = Vec.make () in
@@ -153,7 +141,7 @@ let conversions _ =
   let v = Vec.of_list l in
   assert_equal l (Vec.to_list v);
 
-  Vec.ensure_capacity 100 v;
+  Vec.reserve 100 v;
   let a = Vec.to_array v in
   assert_equal [|1; 2; 3; 4; 5|] a;
   assert_equal 5 (Array.length a)
@@ -184,13 +172,13 @@ let append _ =
 let exists _ =
   let v = Vec.of_list [1; 2; 3; 4; 5] in
   assert_bool "exists" (Vec.exists ((=) 4) v);
-  assert_bool "not exists" (not @@ Vec.exists ((=) 6) v);
-  assert_bool "exists empty" (not @@ Vec.exists (fun _ -> true) @@ Vec.make ())
+  assert_bool "not exists" (not (Vec.exists ((=) 6) v));
+  assert_bool "exists empty" (not (Vec.exists (fun _ -> true) @@ Vec.make ()))
 
 let for_all _ =
   let v = 5 -- 1 in
   assert_bool "for_all" (Vec.for_all ((<=) 1) v);
-  assert_bool "not for_all" (not @@ Vec.for_all ((<=) 3) v);
+  assert_bool "not for_all" (not (Vec.for_all ((<=) 3) v));
   assert_bool "for_all empty" (Vec.for_all (fun _ -> false) @@ Vec.make ())
 
 let mem _ =
@@ -202,7 +190,7 @@ let mem _ =
   let b = [|1; 2|] in
   let v = Vec.of_list [[|1; 2|]; a; [|1; 2|]] in
   assert_bool "memq" (Vec.memq a v);
-  assert_bool "memq" (not @@ Vec.memq b v)
+  assert_bool "memq" (not (Vec.memq b v))
 
 let folds _ =
   let v = 1 -- 100 in
@@ -237,13 +225,14 @@ let equal _ =
   let a = Vec.of_list [1; 2; 3; 4; 5] in
   let b = 1 -- 5 in
 
+  assert_bool "equal self" (Vec.equal a a);
   assert_bool "equal non-empty" (Vec.equal a b);
 
-  Vec.ensure_capacity 10 a;
+  Vec.reserve 10 a;
   assert_bool "equal diff capacity" (Vec.equal a b);
 
   Vec.push 6 a;
-  assert_bool "equal diff length" (not @@ Vec.equal a b)
+  assert_bool "equal diff length" (not (Vec.equal a b))
 
 let compare _ =
   assert_equal 0 @@ Vec.compare (Vec.make ()) (Vec.make ());
@@ -282,7 +271,7 @@ let test_suite =
     ; "capacity" >:: capacity
     ; "get_set" >:: get_set
     ; "find" >:: find
-    ; "add_remove_at" >:: add_remove_at
+    ; "insert_remove" >:: insert_remove
     ; "push_pop" >:: push_pop
     ; "map" >:: map
     ; "iter" >:: iter
