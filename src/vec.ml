@@ -3,8 +3,6 @@ type ('a, -'p) t =
   ; mutable length: int
   }
 
-let growth_rate = 1.5
-
 let[@inline] array_uninit n = Array.make n (Obj.magic 0)
 
 let[@inline] make_unsafe capacity length = { data = array_uninit capacity; length }
@@ -47,16 +45,16 @@ let try_get v i =
 let[@inline] try_set v i a = i >= 0 && i < v.length && (v.data.(i) <- a; true)
 
 let reserve c v =
-  let cap = capacity v in
-  if c > cap then
-    let cap = ref (if cap = 0 then growth_rate else float_of_int cap) in
-    let c = float_of_int c in
+  let old_c = capacity v in
+  if c > old_c then
+    (* Formula taken from ocaml-containers CCVector implementation: https://github.com/c-cube/ocaml-containers/blob/69cd3ca78d60fbcb9aa2e6e63d92015af1f54941/src/core/CCVector.ml#L45 *)
+    let new_c = ref (old_c + (old_c lsr 1) + 2) in
 
-    while !cap < c do
-      cap := !cap *. growth_rate
+    while !new_c < c do
+      new_c := !new_c + (!new_c lsr 1) + 2
     done;
 
-    let data = array_uninit (int_of_float !cap) in
+    let data = array_uninit !new_c in
     Array.blit v.data 0 data 0 v.length;
     v.data <- data
 
