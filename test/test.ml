@@ -8,7 +8,9 @@ let make _ =
 
   let v = Vec.make ~capacity:8 () in
   assert_equal 0 (Vec.length v);
-  assert_equal 8 (Vec.capacity v)
+  assert_equal 8 (Vec.capacity v);
+
+  assert_raises ~msg:"make negative capacity" (Invalid_argument "Negative capacity") (Vec.make ~capacity:(-1))
 
 let capacity _ =
   let v = Vec.make () in
@@ -31,7 +33,7 @@ let get_set _ =
   assert_raises ~msg:"set out of range" (Invalid_argument "Index out of range") (fun () -> v.![0] <- 0);
 
   assert_equal None v.?[0];
-  assert_bool "try_set out of range" (not @@ v.?[0] <- 0);
+  assert_bool "try_set out of range" (not (v.?[0] <- 0));
 
   Vec.push 1 v;
 
@@ -40,6 +42,14 @@ let get_set _ =
 
   assert_bool "try_set in range" (v.?[0] <- 3);
   assert_equal (Some 3) v.?[0]
+
+let range _ =
+  assert_equal [1; 2; 3; 4; 5] (Vec.to_list (1 -- 5));
+  assert_equal [5; 4; 3; 2; 1] (Vec.to_list (5 -- 1));
+
+  assert_equal [1] (Vec.to_list (1 -- 1));
+  assert_equal [0; 1] (Vec.to_list (0 -- 1));
+  assert_equal [1; 0] (Vec.to_list (1 -- 0))
 
 let find _ =
   let v = 1 -- 5 in
@@ -82,9 +92,11 @@ let push_pop _ =
   Vec.push 3 v;
   assert_equal 2 (Vec.length v);
 
-  assert_equal (Some 3) (Vec.pop v);
-  assert_equal (Some 1) (Vec.pop v);
-  assert_equal None (Vec.pop v)
+  assert_equal (Some 3) (Vec.try_pop v);
+  assert_equal (Some 1) (Vec.try_pop v);
+
+  assert_equal None (Vec.try_pop v);
+  assert_raises ~msg:"pop empty" (Invalid_argument "Empty vector") (fun () -> Vec.pop v)
 
 let map _ =
   let v = 0 -- 4 in
@@ -115,26 +127,28 @@ let cartesian_product _ =
   let b = Vec.of_list [10; 20; 30] in
   let expected = [1, 10; 1, 20; 1, 30; 2, 10; 2, 20; 2, 30; 3, 10; 3, 20; 3, 30] in
 
-  assert_equal expected (Vec.to_list @@ Vec.cartesian_product a b)
+  assert_equal expected (Vec.to_list (Vec.cartesian_product a b))
 
 let monad_ops _ =
   let list = [[1; 2; 3]; [4; 5; 6]; [7; 8; 9]] in
   let a = Vec.of_list <$> Vec.of_list list in
-  assert_equal (List.flatten list) (Vec.to_list @@ Vec.flatten a);
+  assert_equal (List.flatten list) (Vec.to_list (Vec.flatten a));
 
   let expected = [1; 1; 1; 2; 2; 2; 3; 3; 3; 4; 4; 4] in
   let f i = Vec.of_list [i; i; i] in
   let a = 1 -- 4 in
-  assert_equal expected @@ Vec.to_list (a >>= f)
+  assert_equal expected (Vec.to_list (a >>= f))
 
 let filter _ =
   let v = 0 -- 10 in
   let even i = i mod 2 = 0 in
-  assert_equal [0; 2; 4; 6; 8; 10] (Vec.to_list @@ Vec.filter even v);
-  assert_equal (Vec.length v) (Vec.length @@ Vec.filteri (=) v);
+  assert_equal [0; 2; 4; 6; 8; 10] (Vec.to_list (Vec.filter even v));
+  assert_equal (Vec.length v) (Vec.length (Vec.filteri (=) v));
 
+  let old_capacity = Vec.capacity v in
   Vec.filter_in_place even v;
-  assert_equal 6 (Vec.length v)
+  assert_equal 6 (Vec.length v);
+  assert_equal old_capacity (Vec.capacity v)
 
 let conversions _ =
   let l = [1; 2; 3; 4; 5] in
@@ -149,7 +163,7 @@ let conversions _ =
 let rev _ =
   let l = [1; 2; 3; 4; 5; 6] in
   let v = Vec.of_list l in
-  assert_equal (List.rev l) (Vec.to_list @@ Vec.rev v);
+  assert_equal (List.rev l) (Vec.to_list (Vec.rev v));
 
   Vec.rev_in_place v;
   assert_equal (List.rev l) (Vec.to_list v)
@@ -167,24 +181,24 @@ let append _ =
   assert_equal l (Vec.to_list v');
   assert_equal 10 (Vec.length v');
 
-  assert_equal l (Vec.to_list @@ v @ v2)
+  assert_equal l (Vec.to_list (v @ v2))
 
 let exists _ =
   let v = Vec.of_list [1; 2; 3; 4; 5] in
   assert_bool "exists" (Vec.exists ((=) 4) v);
   assert_bool "not exists" (not (Vec.exists ((=) 6) v));
-  assert_bool "exists empty" (not (Vec.exists (fun _ -> true) @@ Vec.make ()))
+  assert_bool "exists empty" (not (Vec.exists (fun _ -> true) (Vec.make ())))
 
 let for_all _ =
   let v = 5 -- 1 in
   assert_bool "for_all" (Vec.for_all ((<=) 1) v);
   assert_bool "not for_all" (not (Vec.for_all ((<=) 3) v));
-  assert_bool "for_all empty" (Vec.for_all (fun _ -> false) @@ Vec.make ())
+  assert_bool "for_all empty" (Vec.for_all (fun _ -> false) (Vec.make ()))
 
 let mem _ =
   let v = 1 -- 100 in
   assert_bool "mem" (Vec.mem 95 v);
-  assert_bool "mem not" (not @@ Vec.mem 101 v);
+  assert_bool "mem not" (not (Vec.mem 101 v));
 
   let a = [|1; 2|] in
   let b = [|1; 2|] in
@@ -214,13 +228,13 @@ let zip _ =
   let b = 4 -- 6 in
 
   let expected = [1, 4; 2, 5; 3, 6] in
-  assert_equal expected (Vec.to_list @@ Vec.zip a b);
+  assert_equal expected (Vec.to_list (Vec.zip a b));
 
   let expected = [5; 7; 9] in
-  assert_equal expected (Vec.to_list @@ Vec.zip_with (+) a b)
+  assert_equal expected (Vec.to_list (Vec.zip_with (+) a b))
 
 let equal _ =
-  assert_bool "equal empty" @@ Vec.equal (Vec.make ()) (Vec.make ());
+  assert_bool "equal empty" (Vec.equal (Vec.make ()) (Vec.make ()));
 
   let a = Vec.of_list [1; 2; 3; 4; 5] in
   let b = 1 -- 5 in
@@ -235,7 +249,7 @@ let equal _ =
   assert_bool "equal diff length" (not (Vec.equal a b))
 
 let compare _ =
-  assert_equal 0 @@ Vec.compare (Vec.make ()) (Vec.make ());
+  assert_equal 0 (Vec.compare (Vec.make ()) (Vec.make ()));
 
   let a = Vec.of_list ['a'; 'b'; 'c'] in
   let b = Vec.of_list ['a'; 'b'; 'd'] in
@@ -255,21 +269,22 @@ let compare _ =
 let pretty_print _ =
   let pp = Vec.pretty_print Int.to_string in
 
-  assert_equal "[]" (pp @@ Vec.make ());
-  assert_equal "[2]" (pp @@ Vec.singleton 2);
-  assert_equal "[1; 2; 3; 4; 5]" (pp @@ 1 -- 5);
+  assert_equal "[]" (pp (Vec.make ()));
+  assert_equal "[2]" (pp (Vec.singleton 2));
+  assert_equal "[1; 2; 3; 4; 5]" (pp (1 -- 5));
 
   let pp = Vec.pretty_print (fun s -> s) in
-  assert_equal "[abc; def]" (pp @@ Vec.of_list ["abc"; "def"]);
+  assert_equal "[abc; def]" (pp (Vec.of_list ["abc"; "def"]));
 
-  let pp = Vec.pretty_print (fun s -> Int.to_string @@ String.length s) in
-  assert_equal "[3; 4; 5]" (pp @@ Vec.of_list ["aaa"; "abcd"; "abcde"])
+  let pp = Vec.pretty_print (fun s -> Int.to_string (String.length s)) in
+  assert_equal "[3; 4; 5]" (pp (Vec.of_list ["aaa"; "abcd"; "abcde"]))
 
 let test_suite =
   "Tests" >:::
     [ "make" >:: make
     ; "capacity" >:: capacity
     ; "get_set" >:: get_set
+    ; "range" >:: range
     ; "find" >:: find
     ; "insert_remove" >:: insert_remove
     ; "push_pop" >:: push_pop

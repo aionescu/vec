@@ -2,9 +2,17 @@
 
 type ('a, -'p) t
 
-(** [('a, 'p) Vec.t] is a vector of values of type ['a], with mutability permissions ['p].
+(** A value of type [('a, 'p) Vec.t] is a vector of values of type ['a], with mutability permissions ['p].
 
-    ['p] is [[`R | `W]] for read-write vectors, [[`R]] for read-only vectors, or [[`W]] for write-only vectors. *)
+    The permissions can be [[`R | `W]] for read-write vectors, [[`R]] for read-only vectors, or [[`W]] for write-only vectors. *)
+
+(** {1 Reading vector properties} *)
+
+val length: ('a, [>]) t -> int
+(** Returns the length of the vector. *)
+
+val capacity: ('a, [>]) t -> int
+(** Returns the capacity of the vector. *)
 
 (** {1 Creating vectors} *)
 
@@ -28,29 +36,18 @@ val as_read_only: ('a, [> `R]) t -> ('a, [`R]) t
 val as_write_only: ('a, [> `W]) t -> ('a, [`W]) t
 (** Reinterprets the vector as a write-only vector. *)
 
-(** {1 Basic properties} *)
-
-val length: ('a, [>]) t -> int
-(** Returns the length of the vector. *)
-
-val capacity: ('a, [>]) t -> int
-(** Returns the capacity of the vector. *)
-
-val reserve: int -> ('a, [> `W]) t -> unit
-(** Ensures the vector's capacity is at least as large as the specified value, allocating if necessary. *)
-
 (** {1 Accessing elements} *)
 
 val get: ('a, [> `R]) t -> int -> 'a
 (** Gets the value in the vector at the specified index.
     @raise [Invalid_argument] if the index is out of bounds. *)
 
+val try_get: ('a, [> `R]) t -> int -> 'a option
+(** Gets the value in the vector at the specified index. Returns [None] if the index is out of range. *)
+
 val set: ('a, [> `W]) t -> int -> 'a -> unit
 (** Sets the value in the vector at the specified index to the specified value.
     @raise [Invalid_argument] if the index is out of bounds. *)
-
-val try_get: ('a, [> `R]) t -> int -> 'a option
-(** Gets the value in the vector at the specified index. Returns [None] if the index is out of range. *)
 
 val try_set: ('a, [> `W]) t -> int -> 'a -> bool
 (** Sets the value in the vector at the specified index to the specified value. Returns [false] if the index is out of range. *)
@@ -90,25 +87,32 @@ val pretty_print: ('a -> string) -> ('a, [> `R]) t -> string
 val clear: ('a, [> `W]) t -> unit
 (** Resets the vector to an empty state. *)
 
+val reserve: int -> ('a, [> `W]) t -> unit
+(** Ensures the vector's capacity is at least as large as the specified value, allocating if necessary. *)
+
 val shrink_to_fit: ('a, [> `W]) t -> unit
 (** Shrinks the vector's internal buffer to only be as large as the vector's length. *)
 
 val push: 'a -> ('a, [> `W]) t -> unit
 (** Pushes the specified item onto the end of the vector. *)
 
-val pop: ('a, [`R | `W]) t -> 'a option
-(** Pops off the item from the end of the vector. *)
+val pop: ('a, [`R | `W]) t -> 'a
+(** Pops off the item from the end of the vector.
+    @raise [Invalid_argument] if the vector is empty. *)
+
+val try_pop: ('a, [`R | `W]) t -> 'a option
+(** Pops off the item from the end of the vector. Returns [None] if the vector is empty. *)
 
 val insert_at: int -> 'a -> ('a, [> `W]) t -> unit
 (** Inserts an item into the vector at the specified index.
     @raise [Invalid_argument] if the index is out of bounds. *)
 
+val try_insert_at: int -> 'a -> ('a, [> `W]) t -> bool
+(** Inserts an item into the vector at the specified index. Returns [false] if the index is out of range. *)
+
 val remove_at: int -> ('a, [`R | `W]) t -> 'a
 (** Removes and returns the item at the specified index.
     @raise [Invalid_argument] if the index is out of bounds. *)
-
-val try_insert_at: int -> 'a -> ('a, [> `W]) t -> bool
-(** Inserts an item into the vector at the specified index. Returns [false] if the index is out of range. *)
 
 val try_remove_at: int -> ('a, [`R | `W]) t -> 'a option
 (** Removes and returns the item at the specified index. Returns [None] if the index is out of range. *)
@@ -226,11 +230,11 @@ module Infix: sig
   val (.![]): ('a, [> `R]) t -> int -> 'a
   (** Infix version of {!get}. *)
 
-  val (.![]<-): ('a, [> `W]) t -> int -> 'a -> unit
-  (** Infix version of {!set}. *)
-
   val (.?[]): ('a, [> `R]) t -> int -> 'a option
   (** Infix version of {!try_get}. *)
+
+  val (.![]<-): ('a, [> `W]) t -> int -> 'a -> unit
+  (** Infix version of {!set}. *)
 
   val (.?[]<-): ('a, [> `W]) t -> int -> 'a -> bool
   (** Infix version of {!try_set}. *)

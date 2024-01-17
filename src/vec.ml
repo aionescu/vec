@@ -11,7 +11,7 @@ let[@inline] make_unsafe capacity length = { data = array_uninit capacity; lengt
 
 let[@inline] make ?capacity:(c=0) () =
   if c < 0 then
-    raise (Invalid_argument "capacity < 0")
+    raise (Invalid_argument "Negative capacity")
   else
     make_unsafe c 0
 
@@ -23,8 +23,8 @@ let[@inline] length v = v.length
 let[@inline] capacity v = Array.length v.data
 
 let[@inline] clear v =
-  v.length <- 0;
-  v.data <- [||]
+  v.data <- [||];
+  v.length <- 0
 
 let[@inline] get v i =
   if i < 0 || i >= v.length then
@@ -73,7 +73,7 @@ let[@inline] push a v =
   v.length <- new_length;
   v.data.(old_length) <- a
 
-let[@inline] pop v =
+let[@inline] try_pop v =
   if v.length = 0 then
     None
   else
@@ -82,6 +82,11 @@ let[@inline] pop v =
     v.data.(last) <- Obj.magic 0;
     v.length <- last;
     Some a
+
+let[@inline] pop v =
+  match try_pop v with
+  | None -> raise (Invalid_argument "Empty vector")
+  | Some a -> a
 
 let[@inline] singleton a =
   { data = [|a|]
@@ -93,9 +98,9 @@ let try_find f v =
     if i = v.length then
       None
     else
-      let e = v.data.(i) in
-      if f e then
-        Some e
+      let a = v.data.(i) in
+      if f a then
+        Some a
       else
         go (i + 1)
   in
@@ -253,19 +258,16 @@ let filteri f v =
   v2
 
 let filter_in_place f v =
-  let old_l = v.length in
+  let old_length = v.length in
   let l = ref 0 in
 
-  for i = 0 to old_l - 1 do
-    let e = v.data.(i) in
-    if f e then
-      (v.data.(!l) <- e; incr l)
+  for i = 0 to old_length - 1 do
+    let a = v.data.(i) in
+    if f a then
+      (v.data.(!l) <- a; incr l)
   done;
 
-  for i = !l to old_l - 1 do
-    v.data.(i) <- Obj.magic 0
-  done;
-
+  Array.fill v.data !l (old_length - !l) (Obj.magic 0);
   v.length <- !l
 
 let[@inline] of_array_unsafe a =
