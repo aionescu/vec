@@ -2,24 +2,17 @@
 
 type ('a, -'p) t
 
-(** The 'p type parameter is a phantom type parameter that represents the vector's mutability.
+(** [('a, 'p) Vec.t] is a vector of values of type ['a], with mutability permissions ['p].
 
-    It is [[`R | `W]] for read-write vectors, [[`R]] for read-only vectors, or [[`W]] for write-only vectors. *)
-
-val default_growth_rate: float
-(** The default growth rate of newly-created vectors. *)
+    ['p] is [[`R | `W]] for read-write vectors, [[`R]] for read-only vectors, or [[`W]] for write-only vectors. *)
 
 (** {1 Creating vectors} *)
 
-val make: ?growth_rate:float -> ?capacity:int -> unit -> ('a, [`R | `W]) t
-(** Constructs a vector with the specified growth rate and capacity.
-
-    Growth rate defaults to {!default_growth_rate}.
-
-    Capacity defaults to 0. *)
+val make: ?capacity:int -> unit -> ('a, [`R | `W]) t
+(** Constructs a vector with the specified capacity (defaults to 0). *)
 
 val range: int -> int -> (int, [`R | `W]) t
-(** Constructs a vector containing all numbers in the specified range. *)
+(** Constructs a vector containing all numbers in the specified range. Both ascending and descending ranges are supported. *)
 
 val singleton: 'a -> ('a, [`R | `W]) t
 (** Returns a singleton vector containing the specified item. (Applicative functor [pure] operation) *)
@@ -43,40 +36,31 @@ val length: ('a, [>]) t -> int
 val capacity: ('a, [>]) t -> int
 (** Returns the capacity of the vector. *)
 
-val ensure_capacity: int -> ('a, [> `W]) t -> unit
-(** Ensures the vector's buffer has at least as many free slots as the specified value. *)
-
-val growth_rate: ('a, [>]) t -> float
-(** Returns the growth rate of the vector. *)
-
-val set_growth_rate: float -> ('a, [> `W]) t -> unit
-(** Sets the growth rate of vector to the specified value. *)
-
-val ensure_growth_rate: float -> ('a, [> `W]) t -> unit
-(** Ensures the vector's growth rate is at least as great as the specified value. *)
+val reserve: int -> ('a, [> `W]) t -> unit
+(** Ensures the vector's capacity is at least as large as the specified value, allocating if necessary. *)
 
 (** {1 Accessing elements} *)
 
-val get: ('a, [> `R]) t -> int -> 'a option
-(** Gets the value in the vector at the specified index. Returns None if the index is out of range. *)
-
-val set: ('a, [> `W]) t -> int -> 'a -> bool
-(** Sets the value in the vector at the specified index to the specified value. Returns false if the index is out of range. *)
-
-val get_exn: ('a, [> `R]) t -> int -> 'a
+val get: ('a, [> `R]) t -> int -> 'a
 (** Gets the value in the vector at the specified index.
-    @raise Invalid_argument if the index is out of bounds. *)
+    @raise [Invalid_argument] if the index is out of bounds. *)
 
-val set_exn: ('a, [> `W]) t -> int -> 'a -> unit
+val set: ('a, [> `W]) t -> int -> 'a -> unit
 (** Sets the value in the vector at the specified index to the specified value.
-    @raise Invalid_argument if the index is out of bounds. *)
+    @raise [Invalid_argument] if the index is out of bounds. *)
 
-val find: ('a -> bool) -> ('a, [> `W]) t -> 'a option
-(** Returns the first element of the vector that satisfies the predicate, or [None]. *)
+val try_get: ('a, [> `R]) t -> int -> 'a option
+(** Gets the value in the vector at the specified index. Returns [None] if the index is out of range. *)
 
-val find_exn: ('a -> bool) -> ('a, [> `W]) t -> 'a
+val try_set: ('a, [> `W]) t -> int -> 'a -> bool
+(** Sets the value in the vector at the specified index to the specified value. Returns [false] if the index is out of range. *)
+
+val find: ('a -> bool) -> ('a, [> `W]) t -> 'a
 (** Returns the first element of the vector that satisfies the predicate.
-    @raise Not_found if no element satisfies the predicate. *)
+    @raise [Not_found] if no element satisfies the predicate. *)
+
+val try_find: ('a -> bool) -> ('a, [> `W]) t -> 'a option
+(** Returns the first element of the vector that satisfies the predicate, or [None]. *)
 
 (** {1 Conversions} *)
 
@@ -87,10 +71,16 @@ val to_list: ('a, [> `R]) t -> 'a list
 (** Constructs a list from the specified vector. *)
 
 val of_array: 'a array -> ('a, [`R | `W]) t
-(** Constructs a vector from the specified array. *)
+(** Constructs a vector from a copy of the specified array. *)
 
 val to_array: ('a, [> `R]) t -> 'a array
-(** Constructs an array from the specified vector. *)
+(** Constructs an array containing the values of specified vector. *)
+
+val of_array_unsafe : 'a array -> ('a, [`R | `W]) t
+(** Constructs a vector from the specified array, without copying. *)
+
+val to_array_unsafe : ('a, [`R | `W]) t -> 'a array
+(** Returns the vector's underlying buffer. Note: The array may contain uninitialized elements. *)
 
 val pretty_print: ('a -> string) -> ('a, [> `R]) t -> string
 (** Returns a string representation of the vector, using the specified function to format each value. *)
@@ -109,14 +99,19 @@ val push: 'a -> ('a, [> `W]) t -> unit
 val pop: ('a, [`R | `W]) t -> 'a option
 (** Pops off the item from the end of the vector. *)
 
-val add_at: int -> 'a -> ('a, [> `W]) t -> bool
-(** Inserts an item into the vector at the specified index. *)
+val insert_at: int -> 'a -> ('a, [> `W]) t -> unit
+(** Inserts an item into the vector at the specified index.
+    @raise [Invalid_argument] if the index is out of bounds. *)
 
-val remove_at: int -> ('a, [`R | `W]) t -> 'a option
-(** Removes and returns the item at the specified index. *)
+val remove_at: int -> ('a, [`R | `W]) t -> 'a
+(** Removes and returns the item at the specified index.
+    @raise [Invalid_argument] if the index is out of bounds. *)
 
-val drop_at: int -> ('a, [> `W]) t -> bool
-(** Removes the item at the specified index, without returning it. *)
+val try_insert_at: int -> 'a -> ('a, [> `W]) t -> bool
+(** Inserts an item into the vector at the specified index. Returns [false] if the index is out of range. *)
+
+val try_remove_at: int -> ('a, [`R | `W]) t -> 'a option
+(** Removes and returns the item at the specified index. Returns [None] if the index is out of range. *)
 
 (** {1 Transformations} *)
 
@@ -198,10 +193,10 @@ val memq: 'a -> ('a, [> `R]) t -> bool
 (** {1 Sorting} *)
 
 val sort: ('a, [`R | `W]) t -> unit
-(** Sorts the vector. *)
+(** Sorts the vector in-place. *)
 
 val sort_by: ('a -> 'a -> int) -> ('a, [`R | `W]) t -> unit
-(** Sorts the vector using the specified comparison function. *)
+(** Sorts the vector in-place, using the specified comparison function. *)
 
 (** {1 Equality and comparison} *)
 
@@ -229,16 +224,28 @@ val iteri: (int -> 'a -> unit) -> ('a, [> `R]) t -> unit
 
 module Infix: sig
   val (.![]): ('a, [> `R]) t -> int -> 'a
-  (** Infix version of {!get_exn}. *)
-
-  val (.![]<-): ('a, [> `W]) t -> int -> 'a -> unit
-  (** Infix version of {!set_exn}. *)
-
-  val (.?[]): ('a, [> `R]) t -> int -> 'a option
   (** Infix version of {!get}. *)
 
-  val (.?[]<-): ('a, [> `W]) t -> int -> 'a -> bool
+  val (.![]<-): ('a, [> `W]) t -> int -> 'a -> unit
   (** Infix version of {!set}. *)
+
+  val (.?[]): ('a, [> `R]) t -> int -> 'a option
+  (** Infix version of {!try_get}. *)
+
+  val (.?[]<-): ('a, [> `W]) t -> int -> 'a -> bool
+  (** Infix version of {!try_set}. *)
+
+  val (let+): ('a, [> `R]) t -> ('a -> 'b) -> ('b, [`R | `W]) t
+  (** Equivalent to {!map}, but with the arguments flipped. *)
+
+  val (and+): ('a, [> `R]) t -> ('b, [> `R]) t -> ('a * 'b, [`R | `W]) t
+  (** Equivalent to {!cartesian_product}. *)
+
+  val (let*): ('a, [> `R]) t -> ('a -> ('b, [> `R]) t) -> ('b, [`R | `W]) t
+  (** Equivalent to {!flat_map}, but with the arguments flipped. *)
+
+  val (and*): ('a, [> `R]) t -> ('b, [> `R]) t -> ('a * 'b, [`R | `W]) t
+  (** Equivalent to {!cartesian_product}. *)
 
   val (@): ('a, [> `R]) t -> ('a, [> `R]) t -> ('a, [`R | `W]) t
   (** Infix version of {!append}. *)
@@ -264,21 +271,4 @@ module Infix: sig
   val (--): int -> int -> (int, [`R | `W]) t
   (** Infix version of {!range}. *)
 end
-(** Contains infix versions of some vector operations. *)
-
-(** {1 Monadic syntax} *)
-
-module Let_syntax: sig
-  val (let+): ('a, [> `R]) t -> ('a -> 'b) -> ('b, [`R | `W]) t
-  (** Equivalent to {!map}, but with the arguments flipped. *)
-
-  val (and+): ('a, [> `R]) t -> ('b, [> `R]) t -> ('a * 'b, [`R | `W]) t
-  (** Equivalent to {!cartesian_product}. *)
-
-  val (let*): ('a, [> `R]) t -> ('a -> ('b, [> `R]) t) -> ('b, [`R | `W]) t
-  (** Equivalent to {!flat_map}, but with the arguments flipped. *)
-
-  val (and*): ('a, [> `R]) t -> ('b, [> `R]) t -> ('a * 'b, [`R | `W]) t
-  (** Equivalent to {!cartesian_product}. *)
-end
-(** Provides support for OCaml 4.08's binding operator syntax. *)
+(** Contains infix versions of some vector operations, as well as {{: https://v2.ocaml.org/manual/bindingops.html}binding operators} and {{: https://v2.ocaml.org/manual/indexops.html}extended indexing operators}. *)
