@@ -2,10 +2,10 @@
 (generate_opam_files true)
 
 (name vec)
-(version 0.3.0)
+(version 0.4.0)
 (license "GPL-3.0-only")
-(maintainers "aaionescu@pm.me")
-(authors "Alex Ionescu")
+(maintainers "Alex Ionescu <aaionescu@pm.me>")
+(authors "Alex Ionescu <aaionescu@pm.me>")
 (implicit_transitive_deps false)
 (source (github aionescu/vec))
 (documentation "https://aionescu.github.io/vec/docs/vec/index.html")
