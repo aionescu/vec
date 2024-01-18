@@ -1,7 +1,1 @@
-_build/
-*/.merlin
-*.cmi
-*.cmx
-*.o
-*.out
-.vscode/
+_build
